@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://jiffy.tools/</loc>
-  </url>
-  <url>
-    <loc>https://jiffy.tools/music/tap-bpm/</loc>
-  </url>
+  <url><loc>https://jiffy.tools/</loc></url>
+  <url><loc>https://jiffy.tools/text/</loc></url>
+  <url><loc>https://jiffy.tools/developer/</loc></url>
+  <url><loc>https://jiffy.tools/calculators/</loc></url>
+  <url><loc>https://jiffy.tools/converters/</loc></url>
+  <url><loc>https://jiffy.tools/tools/word-counter/</loc></url>
+  <url><loc>https://jiffy.tools/tools/character-counter/</loc></url>
+  <url><loc>https://jiffy.tools/tools/case-converter/</loc></url>
+  <url><loc>https://jiffy.tools/tools/remove-line-breaks/</loc></url>
+  <url><loc>https://jiffy.tools/tools/remove-extra-spaces/</loc></url>
+  <url><loc>https://jiffy.tools/tools/sort-lines/</loc></url>
+  <url><loc>https://jiffy.tools/tools/json-formatter/</loc></url>
+  <url><loc>https://jiffy.tools/tools/json-validator/</loc></url>
+  <url><loc>https://jiffy.tools/tools/base64-encode-decode/</loc></url>
+  <url><loc>https://jiffy.tools/tools/url-encode-decode/</loc></url>
+  <url><loc>https://jiffy.tools/tools/uuid-generator/</loc></url>
+  <url><loc>https://jiffy.tools/tools/unix-timestamp-converter/</loc></url>
+  <url><loc>https://jiffy.tools/tools/percentage-calculator/</loc></url>
+  <url><loc>https://jiffy.tools/tools/percentage-change-calculator/</loc></url>
+  <url><loc>https://jiffy.tools/tools/average-calculator/</loc></url>
+  <url><loc>https://jiffy.tools/tools/date-difference-calculator/</loc></url>
+  <url><loc>https://jiffy.tools/tools/tap-bpm/</loc></url>
+  <url><loc>https://jiffy.tools/tools/bpm-to-ms/</loc></url>
+  <url><loc>https://jiffy.tools/tools/delay-time-calculator/</loc></url>
 </urlset>

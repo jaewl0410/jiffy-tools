@@ -3,6 +3,7 @@
   "name": "jiffy-tools",
   "compatibility_date": "2026-10-09",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash"
   }
 }
