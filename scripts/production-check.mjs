@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { categories, tools } from "../src/registry.mjs";
 
 const origin = "https://jiffy.tools";
-const expected = ["/", ...categories.map(category => `/${category.slug}/`), ...tools.map(tool => `/tools/${tool.slug}/`)];
+const trust = ["about", "privacy", "contact", "terms"];
+const expected = ["/", ...categories.map(category => `/${category.slug}/`), ...tools.map(tool => `/tools/${tool.slug}/`), ...trust.map(slug => `/${slug}/`)];
 const get = (path, options) => fetch(new URL(path, origin), options);
 
 const sitemapResponse = await get("/sitemap.xml");
@@ -26,6 +27,11 @@ for (let start = 0; start < expected.length; start += 8) {
     const canonicals = [...html.matchAll(/<link rel="canonical" href="([^"]+)">/g)].map(match => match[1]);
     assert.deepEqual(canonicals, [origin + path], `${path} canonical`);
     assert.doesNotMatch(html, /<meta name="robots" content="noindex/i, `${path} noindex`);
+    for (const slug of trust) assert.ok(html.includes(`href="/${slug}/"`), `${path} footer ${slug}`);
+    if (["/tools/png-to-jpg/", "/tools/image-resizer/", "/tools/image-cropper/", "/tools/base64-to-image/", "/tools/webp-to-png/"].includes(path)) {
+      assert.match(html, /src="\/image\.js"/, `${path} image script`);
+      assert.match(html, /Your file stays in this browser/, `${path} local notice`);
+    }
   }));
 }
 
@@ -34,6 +40,7 @@ for (const asset of ["/assets/favicon.png", "/assets/og-image.png"]) {
   assert.equal(response.status, 200, `${asset} HTTP status`);
   assert.match(response.headers.get("content-type") || "", /^image\/png/, `${asset} content type`);
 }
+assert.equal((await get("/image.js")).status, 200, "image engine asset");
 const missing = await get("/this-page-does-not-exist/");
 assert.equal(missing.status, 404, "missing page HTTP status");
 const old = await get("/music/tap-bpm/", { redirect: "manual" });
