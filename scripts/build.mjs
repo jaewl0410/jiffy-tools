@@ -1,4 +1,4 @@
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { categories, tools } from "../src/registry.mjs";
 import { quantities, getUnit, convert, formatNumber } from "../src/converters.mjs";
@@ -23,7 +23,18 @@ const trustPages = [
 ];
 const footerLinks = trustPages.map(item => `<a href="/${item.slug}/">${item.title === "Privacy Policy" ? "Privacy" : item.title === "Terms of Use" ? "Terms" : item.title.replace(" Jiffy", "")}</a>`).join("");
 
-function page({ title, description, url, body, script = "", locale = defaultLocale }) {
+const absolute = url => `${origin}${url}`;
+const breadcrumb = items => ({
+  "@type": "BreadcrumbList",
+  itemListElement: items.map(([name, url], index) => ({
+    "@type": "ListItem", position: index + 1, name, item: absolute(url),
+  })),
+});
+const schemaScript = nodes => nodes.length
+  ? `  <script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@graph": nodes }).replaceAll("<", "\\u003c")}</script>\n`
+  : "";
+
+function page({ title, description, url, body, script = "", schema = [], locale = defaultLocale }) {
   const site = localeMetadata[locale];
   if (!site) throw new Error(`Unsupported locale: ${locale}`);
   const canonicalUrl = `${origin}${url}`;
@@ -49,7 +60,7 @@ function page({ title, description, url, body, script = "", locale = defaultLoca
   <meta name="twitter:description" content="${escape(description)}">
   <meta name="twitter:image" content="${ogImage}">
   <link rel="stylesheet" href="/styles.css">
-${script ? `  ${script}\n` : ""}
+${schemaScript(schema)}${script ? `  ${script}\n` : ""}
 </head>
 <body>
   <header class="site-header"><div class="header-inner"><a class="brand" href="/" aria-label="Jiffy home">jiffy<span>.</span></a>${nav}</div></header>
@@ -143,6 +154,10 @@ await save("index.html", page({
   title: "Jiffy — Quick Tools, No Fuss",
   description: "Free, quick converters, text, developer, and calculator tools. Use them directly in your browser.",
   url: "/",
+  schema: [
+    { "@type": "WebSite", "@id": `${origin}/#website`, name: "Jiffy", url: `${origin}/`, publisher: { "@id": `${origin}/#publisher` } },
+    { "@type": "Organization", "@id": `${origin}/#publisher`, name: "Jiffy", url: `${origin}/`, logo: `${origin}${favicon}` },
+  ],
   script: '<script src="/search.js" defer></script>',
   body: `<main class="container"><section class="hero"><p class="eyebrow">FREE BROWSER TOOLS</p><h1>Quick tools. No fuss.</h1><p>Convert, calculate, and clean up text right in your browser.</p><div class="search-wrap"><label for="tool-search">Find a tool</label><input id="tool-search" type="search" placeholder="Try “cm to inches” or “JSON”" autocomplete="off" aria-controls="search-results"><p id="search-status" class="search-status" role="status" aria-live="polite"></p><div id="search-results" class="search-results" hidden></div></div></section><section class="listing home-categories"><h2>Browse by category</h2><div class="category-grid">${categories.map(c => `<a class="category-card" href="/${c.slug}/"><strong>${escape(c.name)}</strong><span>${grouped(c.slug).length} tools</span><small>${escape(c.description)}</small></a>`).join("")}</div></section><section class="listing"><div class="section-heading"><h2>Popular tools</h2><a href="/converters/">All converters →</a></div><div class="tool-grid">${popular.map(link).join("")}</div></section><script id="search-index" type="application/json">${JSON.stringify(searchIndex).replaceAll("<", "\\u003c")}</script></main>`,
 }));
@@ -152,6 +167,7 @@ for (const category of categories) {
     title: `${category.name} Tools | Jiffy`,
     description: category.description,
     url: `/${category.slug}/`,
+    schema: [breadcrumb([["Home", "/"], [category.name, `/${category.slug}/`]])],
     body: `<main class="container"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span>${category.name}</nav><section class="page-intro"><h1>${category.slug === "converters" ? "Converters" : `${category.name} tools`}</h1><p>${escape(category.description)}</p></section>${category.slug === "converters" ? `<nav class="quantity-nav" aria-label="Converter types">${converterGroups.map(group => `<a href="#${group.quantity}">${escape(quantities[group.quantity].name)}</a>`).join("")}</nav>${converterGroups.map(group => `<section class="listing quantity-section" id="${group.quantity}"><div class="section-heading"><h2>${escape(quantities[group.quantity].name)}</h2><span>${group.tools.length} tools</span></div><div class="tool-grid">${group.tools.map(link).join("")}</div></section>`).join("")}` : `<div class="tool-grid">${grouped(category.slug).map(link).join("")}</div>`}</main>`,
   }));
 }
@@ -167,6 +183,19 @@ for (const tool of tools) {
   const inverse = tool.engine === "pair-converter" ? tools.find(t => t.engine === "pair-converter" && t.quantity === tool.quantity && t.from === tool.to && t.to === tool.from) : null;
   await save(`tools/${tool.slug}/index.html`, page({
     title: tool.title, description: tool.meta, url: `/tools/${tool.slug}/`,
+    schema: [
+      breadcrumb([["Home", "/"], [category.name, `/${category.slug}/`], [tool.name, `/tools/${tool.slug}/`]]),
+      {
+        "@type": "WebApplication",
+        name: tool.name,
+        url: absolute(`/tools/${tool.slug}/`),
+        description: tool.meta,
+        applicationCategory: "UtilitiesApplication",
+        operatingSystem: "Any",
+        browserRequirements: "Requires a modern web browser",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      },
+    ],
     script: tool.category === "converters" ? '<script type="module" src="/converter.js"></script>' : tool.engine === "image" ? '<script type="module" src="/image.js"></script>' : '<script src="/tool.js" defer></script>',
     body: `<main class="container tool-page" data-tool="${tool.slug}"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><a href="/${category.slug}/">${category.name}</a><span>›</span>${escape(tool.name)}</nav><section class="page-intro"><h1>${escape(tool.name)}</h1><p>${escape(tool.description)}</p></section><section class="tool-panel" aria-label="${escape(tool.name)} tool">${toolUI(tool)}</section>${tool.category === "converters" ? converterInfo(tool) : `<section class="info"><h2>How to use it</h2><p>${escape(tool.example)} Everything runs in your browser.</p></section>`}${tool.engine === "pair-converter" ? `<p class="converter-links"><a href="/tools/${inverse.slug}/">Reverse: ${escape(inverse.name)}</a><span>·</span><a href="/tools/${tool.quantity}-converter/">All ${escape(quantities[tool.quantity].name.toLowerCase())} units</a></p>` : ""}<section class="listing"><h2>Related tools</h2><div class="tool-grid">${related.map(link).join("")}</div></section></main>`,
   }));
@@ -174,6 +203,9 @@ for (const tool of tools) {
 
 for (const item of trustPages) await save(`${item.slug}/index.html`, page({
   title: `${item.title} | Jiffy`, description: item.description, url: `/${item.slug}/`,
+  schema: [
+    { "@type": item.slug === "about" ? "AboutPage" : item.slug === "contact" ? "ContactPage" : "WebPage", name: item.title, url: absolute(`/${item.slug}/`), description: item.description },
+  ],
   body: `<main class="container trust-page"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span>${item.title}</nav><article>${item.body}</article></main>`,
 }));
 
@@ -182,4 +214,11 @@ await save("converter-data.js", await readFile(new URL("../src/converters.mjs", 
 const urls = ["/", ...categories.map(c => `/${c.slug}/`), ...tools.map(t => `/tools/${t.slug}/`), ...trustPages.map(p => `/${p.slug}/`)];
 await save("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(url => `  <url><loc>${origin}${url}</loc></url>`).join("\n")}\n</urlset>\n`);
 await save("_redirects", "/music/tap-bpm/ /tools/tap-bpm/ 301\n/music/tap-bpm /tools/tap-bpm/ 301\n/music/tap-bpm/index.html /tools/tap-bpm/ 301\n");
+const indexNowKey = process.env.INDEXNOW_KEY?.trim();
+if (indexNowKey) {
+  if (!/^[a-zA-Z0-9-]{8,128}$/.test(indexNowKey)) throw new Error("INDEXNOW_KEY must be 8–128 letters, digits, or hyphens.");
+  await save("indexnow-key.txt", indexNowKey);
+} else {
+  await rm(path("indexnow-key.txt"), { force: true });
+}
 console.log(`Built ${tools.length} tools, ${categories.length} categories, and sitemap with ${urls.length} URLs.`);

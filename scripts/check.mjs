@@ -38,6 +38,35 @@ for (const url of urls) {
   const html = await read("." + url + "index.html");
   if (!html.includes(`<link rel="canonical" href="https://jiffy.tools${url}">`)) failures.push(`Bad canonical: ${url}`);
   if ((html.match(/<link rel="canonical"/g) || []).length !== 1) failures.push(`Duplicate canonical: ${url}`);
+  const schemaTags = [...html.matchAll(/<script type="application\/ld\+json">([^<]+)<\/script>/g)];
+  if (schemaTags.length !== 1) failures.push(`Expected one JSON-LD script: ${url}`);
+  else {
+    try {
+      const schema = JSON.parse(schemaTags[0][1]);
+      const nodes = schema["@graph"];
+      const canonical = `https://jiffy.tools${url}`;
+      if (schema["@context"] !== "https://schema.org" || !Array.isArray(nodes)) failures.push(`Bad JSON-LD graph: ${url}`);
+      else {
+        for (const node of nodes) {
+          if (node.url && node.url !== canonical && !(url === "/" && node.url === "https://jiffy.tools/")) failures.push(`Schema URL differs from canonical: ${url}`);
+          if (node["@type"] === "BreadcrumbList") {
+            const crumbs = node.itemListElement;
+            if (!Array.isArray(crumbs) || crumbs.at(-1)?.item !== canonical || crumbs.some((crumb, index) => crumb.position !== index + 1)) failures.push(`Bad breadcrumbs: ${url}`);
+          }
+        }
+        const types = nodes.map(node => node["@type"]);
+        if (url === "/" && (!types.includes("WebSite") || !types.includes("Organization"))) failures.push("Missing home schema.");
+        if (categories.some(category => url === `/${category.slug}/`) && !types.includes("BreadcrumbList")) failures.push(`Missing category breadcrumbs: ${url}`);
+        if (url.startsWith("/tools/")) {
+          if (!types.includes("BreadcrumbList") || !types.includes("WebApplication")) failures.push(`Missing tool schema: ${url}`);
+          const app = nodes.find(node => node["@type"] === "WebApplication");
+          if (app?.offers?.price !== "0" || app?.offers?.priceCurrency !== "USD" || !app?.name || !app?.description) failures.push(`Bad free tool schema: ${url}`);
+        }
+        if (url === "/about/" && !types.includes("AboutPage")) failures.push("Missing AboutPage schema.");
+        if (url === "/contact/" && !types.includes("ContactPage")) failures.push("Missing ContactPage schema.");
+      }
+    } catch { failures.push(`Invalid JSON-LD: ${url}`); }
+  }
   if (/hreflang=/i.test(html)) failures.push(`Unexpected hreflang: ${url}`);
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
   const description = html.match(/<meta name="description" content="([^"]+)">/)?.[1];
