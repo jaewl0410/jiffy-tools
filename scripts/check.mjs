@@ -87,6 +87,18 @@ if (new Set(listed).size !== listed.length) failures.push("Duplicate sitemap URL
 const publicHtml = await htmlPaths();
 const expectedHtml = urls.map(url => (url === "/" ? "" : url.slice(1)) + "index.html");
 if (publicHtml.length !== expectedHtml.length || publicHtml.some(path => !expectedHtml.includes(path))) failures.push("Public HTML files do not match sitemap URLs.");
+const home = await read("./index.html");
+const searchData = home.match(/<script id="search-index" type="application\/json">([^<]+)<\/script>/)?.[1];
+if (!home.includes('src="/search.js"') || !searchData) failures.push("Missing home search assets.");
+else {
+  const searchIndex = JSON.parse(searchData);
+  const searchUrls = searchIndex.map(item => item.url);
+  if (searchIndex.length !== tools.length || new Set(searchUrls).size !== tools.length || tools.some(tool => !searchUrls.includes(`/tools/${tool.slug}/`))) failures.push("Search index does not match registry tools.");
+}
+for (const category of categories) {
+  const count = tools.filter(tool => tool.category === category.slug).length;
+  if (!home.includes(`${count} tools`)) failures.push(`Missing home category count: ${category.slug}`);
+}
 const redirects = await read("./_redirects");
 if (!redirects.includes("/music/tap-bpm/ /tools/tap-bpm/ 301")) failures.push("Missing Tap BPM 301 redirect.");
 const robots = await read("./robots.txt");

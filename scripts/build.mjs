@@ -93,6 +93,15 @@ async function save(relative, content) {
 }
 
 const grouped = category => tools.filter(t => t.category === category);
+const popularSlugs = ["word-counter", "json-formatter", "percentage-calculator", "cm-to-inches", "kg-to-lbs", "celsius-to-fahrenheit", "length-converter", "data-storage-converter"];
+const popular = popularSlugs.map(slug => tools.find(tool => tool.slug === slug));
+const searchIndex = tools.map(tool => ({
+  name: tool.name,
+  description: tool.description,
+  url: `/tools/${tool.slug}/`,
+  category: categories.find(category => category.slug === tool.category).name,
+  keywords: [tool.slug.replaceAll("-", " "), tool.quantity, ...(tool.units || [])].filter(Boolean).join(" "),
+}));
 const converterGroups = Object.keys(quantities).map(quantity => ({ quantity, tools: tools.filter(t => t.category === "converters" && t.quantity === quantity) }));
 const converterNote = quantity => quantity === "data-storage"
   ? "Decimal units use SI: 1 KB = 1,000 B, 1 MB = 1,000,000 B. Binary units use IEC: 1 KiB = 1,024 B, 1 MiB = 1,048,576 B."
@@ -113,7 +122,8 @@ await save("index.html", page({
   title: "Jiffy — Quick Tools, No Fuss",
   description: "Free, quick converters, text, developer, and calculator tools. Use them directly in your browser.",
   url: "/",
-  body: `<main class="container"><section class="hero"><p class="eyebrow">FREE BROWSER TOOLS</p><h1>Quick tools. No fuss.</h1><p>Pick a task and get straight to it. No account, upload, or wait.</p></section>${categories.map(c => `<section class="listing"><div class="section-heading"><h2><a href="/${c.slug}/">${c.name}</a></h2><a href="/${c.slug}/">View all →</a></div><div class="tool-grid">${grouped(c.slug).slice(0, 6).map(link).join("")}</div></section>`).join("")}</main>`,
+  script: '<script src="/search.js" defer></script>',
+  body: `<main class="container"><section class="hero"><p class="eyebrow">FREE BROWSER TOOLS</p><h1>Quick tools. No fuss.</h1><p>Convert, calculate, and clean up text right in your browser.</p><div class="search-wrap"><label for="tool-search">Find a tool</label><input id="tool-search" type="search" placeholder="Try “cm to inches” or “JSON”" autocomplete="off" aria-controls="search-results"><p id="search-status" class="search-status" role="status" aria-live="polite"></p><div id="search-results" class="search-results" hidden></div></div></section><section class="listing home-categories"><h2>Browse by category</h2><div class="category-grid">${categories.map(c => `<a class="category-card" href="/${c.slug}/"><strong>${escape(c.name)}</strong><span>${grouped(c.slug).length} tools</span><small>${escape(c.description)}</small></a>`).join("")}</div></section><section class="listing"><div class="section-heading"><h2>Popular tools</h2><a href="/converters/">All converters →</a></div><div class="tool-grid">${popular.map(link).join("")}</div></section><script id="search-index" type="application/json">${JSON.stringify(searchIndex).replaceAll("<", "\\u003c")}</script></main>`,
 }));
 
 for (const category of categories) {
@@ -121,13 +131,18 @@ for (const category of categories) {
     title: `${category.name} Tools | Jiffy`,
     description: category.description,
     url: `/${category.slug}/`,
-    body: `<main class="container"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span>${category.name}</nav><section class="page-intro"><h1>${category.slug === "converters" ? "Converters" : `${category.name} tools`}</h1><p>${escape(category.description)}</p></section>${category.slug === "converters" ? `<nav class="quantity-nav" aria-label="Converter types">${converterGroups.map(group => `<a href="#${group.quantity}">${escape(quantities[group.quantity].name)}</a>`).join("")}</nav>${converterGroups.map(group => `<section class="listing quantity-section" id="${group.quantity}"><h2>${escape(quantities[group.quantity].name)}</h2><div class="tool-grid">${group.tools.map(link).join("")}</div></section>`).join("")}` : `<div class="tool-grid">${grouped(category.slug).map(link).join("")}</div>`}</main>`,
+    body: `<main class="container"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span>${category.name}</nav><section class="page-intro"><h1>${category.slug === "converters" ? "Converters" : `${category.name} tools`}</h1><p>${escape(category.description)}</p></section>${category.slug === "converters" ? `<nav class="quantity-nav" aria-label="Converter types">${converterGroups.map(group => `<a href="#${group.quantity}">${escape(quantities[group.quantity].name)}</a>`).join("")}</nav>${converterGroups.map(group => `<section class="listing quantity-section" id="${group.quantity}"><div class="section-heading"><h2>${escape(quantities[group.quantity].name)}</h2><span>${group.tools.length} tools</span></div><div class="tool-grid">${group.tools.map(link).join("")}</div></section>`).join("")}` : `<div class="tool-grid">${grouped(category.slug).map(link).join("")}</div>`}</main>`,
   }));
 }
 
 for (const tool of tools) {
   const category = categories.find(c => c.slug === tool.category);
-  const related = tool.related.map(slug => tools.find(t => t.slug === slug)).filter(Boolean);
+  const relatedCandidates = [
+    ...tool.related.map(slug => tools.find(t => t.slug === slug)),
+    ...tools.filter(candidate => candidate.slug !== tool.slug && candidate.category === tool.category && candidate.quantity === tool.quantity),
+    ...tools.filter(candidate => candidate.slug !== tool.slug && candidate.category === tool.category),
+  ];
+  const related = [...new Map(relatedCandidates.filter(Boolean).map(candidate => [candidate.slug, candidate])).values()].slice(0, 6);
   const inverse = tool.engine === "pair-converter" ? tools.find(t => t.engine === "pair-converter" && t.quantity === tool.quantity && t.from === tool.to && t.to === tool.from) : null;
   await save(`tools/${tool.slug}/index.html`, page({
     title: tool.title, description: tool.meta, url: `/tools/${tool.slug}/`,
