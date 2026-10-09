@@ -5,6 +5,7 @@ export const categories = [
   { slug: "developer", name: "Developer", description: "Everyday encoding, JSON, IDs, and time tools." },
   { slug: "calculators", name: "Calculators", description: "Quick answers for percentages, dates, and music timing." },
   { slug: "converters", name: "Converters", description: "Convert common units instantly, with clear formulas and no uploads." },
+  { slug: "image", name: "Image", description: "Convert and adjust images locally in your browser." },
 ];
 
 const text = (slug, name, description, engine, example, related) => ({ slug, name, description, category: "text", engine, example, related });
@@ -82,4 +83,24 @@ const pairConverters = pairSpecs.map(([quantity, slug, from, to]) => {
   };
 });
 
-export const tools = [...waveOneTools, ...generalConverters, ...pairConverters];
+const image = (slug, name, description, mode, related, options = {}) => ({
+  slug, name, description, category: "image", engine: "image", mode, related, ...options,
+  example: "Choose an image, adjust the options, then download the result.",
+  title: `${name} — Free Online Image Tool | Jiffy`, meta: `${description} Files stay in your browser.`,
+});
+const imageTools = [
+  image("jpg-to-png", "JPG to PNG", "Convert a JPG image to PNG.", "format", ["png-to-jpg", "jpg-to-webp"], { input: "jpeg", output: "png" }),
+  image("png-to-jpg", "PNG to JPG", "Convert a PNG image to JPG with a white background for transparency.", "format", ["jpg-to-png", "png-to-webp"], { input: "png", output: "jpeg" }),
+  image("webp-to-png", "WebP to PNG", "Convert a WebP image to PNG.", "format", ["png-to-webp", "webp-to-jpg"], { input: "webp", output: "png" }),
+  image("png-to-webp", "PNG to WebP", "Convert a PNG image to WebP.", "format", ["webp-to-png", "png-to-jpg"], { input: "png", output: "webp" }),
+  image("jpg-to-webp", "JPG to WebP", "Convert a JPG image to WebP.", "format", ["webp-to-jpg", "jpg-to-png"], { input: "jpeg", output: "webp" }),
+  image("webp-to-jpg", "WebP to JPG", "Convert a WebP image to JPG with a white background for transparency.", "format", ["jpg-to-webp", "webp-to-png"], { input: "webp", output: "jpeg" }),
+  image("image-resizer", "Image Resizer", "Resize an image by width and height while optionally keeping its aspect ratio.", "resize", ["image-cropper", "rotate-image"]),
+  image("rotate-image", "Rotate Image", "Rotate an image 90, 180, or 270 degrees.", "rotate", ["flip-image", "image-resizer"]),
+  image("flip-image", "Flip Image", "Flip an image horizontally or vertically.", "flip", ["rotate-image", "image-cropper"]),
+  image("image-to-base64", "Image to Base64", "Turn an image into a data URL or raw Base64 text.", "encode", ["base64-to-image", "png-to-webp"]),
+  image("base64-to-image", "Base64 to Image", "Preview and download an image from a data URL or raw Base64 text.", "decode", ["image-to-base64", "image-resizer"]),
+  image("image-cropper", "Image Cropper", "Crop an image by entering its start position and output size in pixels.", "crop", ["image-resizer", "rotate-image"]),
+];
+
+export const tools = [...waveOneTools, ...generalConverters, ...pairConverters, ...imageTools];

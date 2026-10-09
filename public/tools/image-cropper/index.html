@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Cropper — Free Online Image Tool | Jiffy</title>
+  <meta name="description" content="Crop an image by entering its start position and output size in pixels. Files stay in your browser.">
+  <link rel="canonical" href="https://jiffy.tools/tools/image-cropper/">
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/favicon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Jiffy">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Image Cropper — Free Online Image Tool | Jiffy">
+  <meta property="og:description" content="Crop an image by entering its start position and output size in pixels. Files stay in your browser.">
+  <meta property="og:url" content="https://jiffy.tools/tools/image-cropper/">
+  <meta property="og:image" content="https://jiffy.tools/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Image Cropper — Free Online Image Tool | Jiffy">
+  <meta name="twitter:description" content="Crop an image by entering its start position and output size in pixels. Files stay in your browser.">
+  <meta name="twitter:image" content="https://jiffy.tools/assets/og-image.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/image.js"></script>
+
+</head>
+<body>
+  <header class="site-header"><div class="header-inner"><a class="brand" href="/" aria-label="Jiffy home">jiffy<span>.</span></a><nav class="site-nav" aria-label="Categories"><a href="/text/">Text</a><a href="/developer/">Developer</a><a href="/calculators/">Calculators</a><a href="/converters/">Converters</a><a href="/image/">Image</a></nav></div></header>
+  <main class="container tool-page" data-tool="image-cropper"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><a href="/image/">Image</a><span>›</span>Image Cropper</nav><section class="page-intro"><h1>Image Cropper</h1><p>Crop an image by entering its start position and output size in pixels.</p></section><section class="tool-panel" aria-label="Image Cropper tool"><div class="image-ui" data-mode="crop" data-input="" data-output=""><p class="local-note">Your file stays in this browser. No upload.</p><label class="field"><span>Choose image (up to 20 MB)</span><input id="image-file" type="file" accept="image/png,image/jpeg,image/webp"></label><p class="field-hint">Enter the crop area in pixels from the top-left corner.</p><div class="fields"><label class="field"><span>Left (px)</span><input id="crop-x" type="number" min="0" step="1" value="0" inputmode="numeric"></label><label class="field"><span>Top (px)</span><input id="crop-y" type="number" min="0" step="1" value="0" inputmode="numeric"></label><label class="field"><span>Width (px)</span><input id="crop-width" type="number" min="1" step="1" value="1" inputmode="numeric"></label><label class="field"><span>Height (px)</span><input id="crop-height" type="number" min="1" step="1" value="1" inputmode="numeric"></label></div><p class="field-hint">The edited image downloads as PNG to preserve transparency.</p><div class="actions"><button id="image-run" type="button">Process image</button><a id="image-download" class="button-link secondary" hidden>Download result</a></div><p id="image-status" class="status" role="status" aria-live="polite"></p><div id="image-result" class="image-result" hidden><p id="image-details"></p><img id="image-preview" alt="Result preview"><label id="base64-output-wrap" class="field" hidden><span>Base64 result</span><textarea id="base64-output" readonly></textarea></label></div></div></section><section class="info"><h2>How to use it</h2><p>Choose an image, adjust the options, then download the result. Everything runs in your browser.</p></section><section class="listing"><h2>Related tools</h2><div class="tool-grid"><a class="tool-card" href="/tools/image-resizer/"><strong>Image Resizer</strong><span>Resize an image by width and height while optionally keeping its aspect ratio.</span></a><a class="tool-card" href="/tools/rotate-image/"><strong>Rotate Image</strong><span>Rotate an image 90, 180, or 270 degrees.</span></a><a class="tool-card" href="/tools/jpg-to-png/"><strong>JPG to PNG</strong><span>Convert a JPG image to PNG.</span></a><a class="tool-card" href="/tools/png-to-jpg/"><strong>PNG to JPG</strong><span>Convert a PNG image to JPG with a white background for transparency.</span></a><a class="tool-card" href="/tools/webp-to-png/"><strong>WebP to PNG</strong><span>Convert a WebP image to PNG.</span></a><a class="tool-card" href="/tools/png-to-webp/"><strong>PNG to WebP</strong><span>Convert a PNG image to WebP.</span></a></div></section></main>
+  <footer class="site-footer"><div><div class="footer-brand"><a href="/">Jiffy</a><span>Fast, useful tools. Right in your browser.</span></div><nav aria-label="Site information"><a href="/about/">About</a><a href="/privacy/">Privacy</a><a href="/contact/">Contact</a><a href="/terms/">Terms</a></nav></div></footer>
+</body>
+</html>

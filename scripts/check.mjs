@@ -6,7 +6,8 @@ const publicDir = new URL("../public/", import.meta.url);
 const failures = [];
 const favicon = "/assets/favicon.png";
 const ogImage = "https://jiffy.tools/assets/og-image.png";
-const urls = ["/", ...categories.map(c => `/${c.slug}/`), ...tools.map(t => `/tools/${t.slug}/`)];
+const trust = ["about", "privacy", "contact", "terms"];
+const urls = ["/", ...categories.map(c => `/${c.slug}/`), ...tools.map(t => `/tools/${t.slug}/`), ...trust.map(slug => `/${slug}/`)];
 const urlSet = new Set(urls);
 const read = relative => readFile(new URL(relative, publicDir), "utf8");
 const exists = async url => {
@@ -59,6 +60,7 @@ for (const url of urls) {
     `<meta name="twitter:image" content="${ogImage}">`,
   ];
   for (const tag of expected) if (!html.includes(tag)) failures.push(`Missing or incorrect metadata ${url}: ${tag}`);
+  for (const slug of trust) if (!html.includes(`href="/${slug}/"`)) failures.push(`Missing footer link ${url} → /${slug}/`);
   for (const match of html.matchAll(/href="(\/[^"]*)"/g)) {
     const link = match[1];
     if (link === "/styles.css") continue;
@@ -73,6 +75,7 @@ for (const url of urls) {
       if (!html.includes(`data-quantity="${tool.quantity}"`) || !html.includes('id="converter-value"')) failures.push(`Missing converter UI: ${url}`);
       if (tool.engine === "pair-converter" && (!html.includes("Conversion formula") || !html.includes("Reverse:"))) failures.push(`Missing pair content: ${url}`);
     }
+    if (tool.engine === "image" && (!html.includes('class="image-ui"') || !html.includes('src="/image.js"') || !html.includes("Your file stays in this browser"))) failures.push(`Missing image UI: ${url}`);
   }
 }
 if (!await exists(new URL(ogImage).pathname)) failures.push(`Missing OG asset: ${ogImage}`);

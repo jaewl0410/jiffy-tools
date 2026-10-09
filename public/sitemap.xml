@@ -5,6 +5,7 @@
   <url><loc>https://jiffy.tools/developer/</loc></url>
   <url><loc>https://jiffy.tools/calculators/</loc></url>
   <url><loc>https://jiffy.tools/converters/</loc></url>
+  <url><loc>https://jiffy.tools/image/</loc></url>
   <url><loc>https://jiffy.tools/tools/word-counter/</loc></url>
   <url><loc>https://jiffy.tools/tools/character-counter/</loc></url>
   <url><loc>https://jiffy.tools/tools/case-converter/</loc></url>
@@ -69,4 +70,20 @@
   <url><loc>https://jiffy.tools/tools/minutes-to-hours/</loc></url>
   <url><loc>https://jiffy.tools/tools/days-to-hours/</loc></url>
   <url><loc>https://jiffy.tools/tools/hours-to-days/</loc></url>
+  <url><loc>https://jiffy.tools/tools/jpg-to-png/</loc></url>
+  <url><loc>https://jiffy.tools/tools/png-to-jpg/</loc></url>
+  <url><loc>https://jiffy.tools/tools/webp-to-png/</loc></url>
+  <url><loc>https://jiffy.tools/tools/png-to-webp/</loc></url>
+  <url><loc>https://jiffy.tools/tools/jpg-to-webp/</loc></url>
+  <url><loc>https://jiffy.tools/tools/webp-to-jpg/</loc></url>
+  <url><loc>https://jiffy.tools/tools/image-resizer/</loc></url>
+  <url><loc>https://jiffy.tools/tools/rotate-image/</loc></url>
+  <url><loc>https://jiffy.tools/tools/flip-image/</loc></url>
+  <url><loc>https://jiffy.tools/tools/image-to-base64/</loc></url>
+  <url><loc>https://jiffy.tools/tools/base64-to-image/</loc></url>
+  <url><loc>https://jiffy.tools/tools/image-cropper/</loc></url>
+  <url><loc>https://jiffy.tools/about/</loc></url>
+  <url><loc>https://jiffy.tools/privacy/</loc></url>
+  <url><loc>https://jiffy.tools/contact/</loc></url>
+  <url><loc>https://jiffy.tools/terms/</loc></url>
 </urlset>

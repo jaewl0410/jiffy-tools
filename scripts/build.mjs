@@ -15,6 +15,13 @@ const escape = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;", "
 const path = (...parts) => join(root.pathname.replace(/^\/(?:[A-Za-z]:)/, match => match.slice(1)), ...parts);
 const link = tool => `<a class="tool-card" href="/tools/${tool.slug}/"><strong>${escape(tool.name)}</strong><span>${escape(tool.description)}</span></a>`;
 const nav = `<nav class="site-nav" aria-label="Categories">${categories.map(c => `<a href="/${c.slug}/">${escape(c.name)}</a>`).join("")}</nav>`;
+const trustPages = [
+  { slug: "about", title: "About Jiffy", description: "Learn about Jiffy's free browser tools and how they work.", body: `<h1>About Jiffy</h1><p>Jiffy is a collection of free tools for everyday conversions, calculations, text, and images. There is no account to create.</p><p>We aim to process tool inputs locally in your browser whenever possible. Image tools on this site do not upload your files. If a future tool needs a server upload, we will explain that on its page before you use it.</p>` },
+  { slug: "privacy", title: "Privacy Policy", description: "How Jiffy handles tool inputs, hosting data, cookies, and future advertising.", body: `<h1>Privacy Policy</h1><p>Jiffy does not require an account. The current tools run in your browser; image files and other tool inputs are not sent to Jiffy for processing. A future tool that needs an upload will say so on its page.</p><h2>Hosting and analytics</h2><p>Cloudflare hosts this site and may process basic request information, such as IP address, browser details, and pages requested, to serve and protect it. We currently do not include a separate analytics script or set advertising cookies in the site code.</p><h2>Advertising and cookies</h2><p>We may add ads later. If we use Google AdSense or another ad provider, that provider may use cookies or similar technology to show and measure ads. We will update this policy when advertising is enabled. Browser settings can be used to manage cookies.</p><h2>Contact</h2><p>For questions about this policy, see our <a href="/contact/">contact page</a>.</p>` },
+  { slug: "contact", title: "Contact Jiffy", description: "Send feedback or report an issue with a Jiffy tool.", body: `<h1>Contact Jiffy</h1><p>Found a bug or have a tool suggestion? Open a <a href="https://github.com/jaewl0410/jiffy-tools/issues/new">GitHub issue</a>. Issues are public, so do not include private information or files.</p><p>We do not have a public support email yet. A private contact address can be added here when one is available.</p>` },
+  { slug: "terms", title: "Terms of Use", description: "Simple terms for using Jiffy's free browser tools.", body: `<h1>Terms of Use</h1><p>Jiffy offers free utility tools as they are. We try to keep them accurate and available, but provide no warranty and cannot guarantee that every result is suitable for your purpose. Check important results before relying on them.</p><p>You are responsible for the files and information you use with the tools. Do not use this site to break laws, interfere with the service, or harm others.</p><p>Links to third-party sites are provided for convenience; we do not control their content. Advertising may appear in the future. We may change the tools and these terms as the site develops.</p>` },
+];
+const footerLinks = trustPages.map(item => `<a href="/${item.slug}/">${item.title === "Privacy Policy" ? "Privacy" : item.title === "Terms of Use" ? "Terms" : item.title.replace(" Jiffy", "")}</a>`).join("");
 
 function page({ title, description, url, body, script = "", locale = defaultLocale }) {
   const site = localeMetadata[locale];
@@ -47,7 +54,7 @@ ${script ? `  ${script}\n` : ""}
 <body>
   <header class="site-header"><div class="header-inner"><a class="brand" href="/" aria-label="Jiffy home">jiffy<span>.</span></a>${nav}</div></header>
   ${body}
-  <footer class="site-footer"><div><a href="/">Jiffy</a><span>Fast, useful tools. Right in your browser.</span></div></footer>
+  <footer class="site-footer"><div><div class="footer-brand"><a href="/">Jiffy</a><span>Fast, useful tools. Right in your browser.</span></div><nav aria-label="Site information">${footerLinks}</nav></div></footer>
 </body>
 </html>\n`;
 }
@@ -56,6 +63,20 @@ function field([id, label, placeholder], type = "number") {
   return `<label class="field"><span>${escape(label)}</span><input id="${id}" type="${type}" ${type === "number" ? 'step="any" inputmode="decimal"' : ""} ${placeholder ? `${type === "number" ? "value" : "placeholder"}="${escape(placeholder)}"` : ""}></label>`;
 }
 function toolUI(tool) {
+  if (tool.engine === "image") {
+    const select = (id, label, options) => `<label class="field"><span>${label}</span><select id="${id}">${options.map(([value, text]) => `<option value="${value}">${text}</option>`).join("")}</select></label>`;
+    const number = (id, label, value) => `<label class="field"><span>${label}</span><input id="${id}" type="number" min="${id === "crop-x" || id === "crop-y" ? 0 : 1}" step="1" value="${value}" inputmode="numeric"></label>`;
+    const file = tool.mode === "decode" ? "" : `<label class="field"><span>Choose image (up to 20 MB)</span><input id="image-file" type="file" accept="${tool.input ? `image/${tool.input}` : "image/png,image/jpeg,image/webp"}"></label>`;
+    const options = tool.mode === "resize" ? `<div class="fields">${number("width","Width (px)",1)}${number("height","Height (px)",1)}</div><label class="check-field"><input id="keep-ratio" type="checkbox" checked> Keep aspect ratio</label>`
+      : tool.mode === "rotate" ? select("rotation", "Rotate clockwise", [["90","90°"],["180","180°"],["270","270°"]])
+      : tool.mode === "flip" ? select("direction", "Flip direction", [["horizontal","Horizontal"],["vertical","Vertical"]])
+      : tool.mode === "crop" ? `<p class="field-hint">Enter the crop area in pixels from the top-left corner.</p><div class="fields">${number("crop-x","Left (px)",0)}${number("crop-y","Top (px)",0)}${number("crop-width","Width (px)",1)}${number("crop-height","Height (px)",1)}</div>`
+      : tool.mode === "encode" ? select("base64-kind", "Text format", [["data-url","Data URL (includes image type)"],["raw","Raw Base64 (no image type)"]])
+      : tool.mode === "decode" ? `<label class="field"><span>Data URL or raw Base64</span><textarea id="base64-input" placeholder="Paste a data:image/...;base64,... URL or raw Base64"></textarea></label><p class="field-hint">Raw Base64 is detected from the image bytes. PNG, JPG, and WebP are supported.</p>`
+      : tool.output === "jpeg" || tool.output === "webp" ? `<label class="field"><span>Quality: <output id="quality-value">90%</output></span><input id="quality" type="range" min="10" max="100" value="90"></label>` : "";
+    const outputNote = ["resize", "rotate", "flip", "crop"].includes(tool.mode) ? `<p class="field-hint">The edited image downloads as PNG to preserve transparency.</p>` : "";
+    return `<div class="image-ui" data-mode="${tool.mode}" data-input="${tool.input || ""}" data-output="${tool.output || ""}"><p class="local-note">Your file stays in this browser. No upload.</p>${file}${options}${outputNote}<div class="actions"><button id="image-run" type="button">${tool.mode === "decode" ? "Decode image" : tool.mode === "encode" ? "Convert to Base64" : "Process image"}</button><a id="image-download" class="button-link secondary" hidden>Download result</a></div><p id="image-status" class="status" role="status" aria-live="polite"></p><div id="image-result" class="image-result" hidden><p id="image-details"></p><img id="image-preview" alt="Result preview"><label id="base64-output-wrap" class="field" hidden><span>Base64 result</span><textarea id="base64-output" readonly></textarea></label></div></div>`;
+  }
   if (tool.engine === "unit-converter" || tool.engine === "pair-converter") {
     const pair = tool.engine === "pair-converter";
     const options = selected => quantities[tool.quantity].units.map(unit => `<option value="${unit.id}"${unit.id === selected ? " selected" : ""}>${escape(unit.label)} (${escape(unit.symbol)})</option>`).join("");
@@ -146,14 +167,19 @@ for (const tool of tools) {
   const inverse = tool.engine === "pair-converter" ? tools.find(t => t.engine === "pair-converter" && t.quantity === tool.quantity && t.from === tool.to && t.to === tool.from) : null;
   await save(`tools/${tool.slug}/index.html`, page({
     title: tool.title, description: tool.meta, url: `/tools/${tool.slug}/`,
-    script: tool.category === "converters" ? '<script type="module" src="/converter.js"></script>' : '<script src="/tool.js" defer></script>',
+    script: tool.category === "converters" ? '<script type="module" src="/converter.js"></script>' : tool.engine === "image" ? '<script type="module" src="/image.js"></script>' : '<script src="/tool.js" defer></script>',
     body: `<main class="container tool-page" data-tool="${tool.slug}"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><a href="/${category.slug}/">${category.name}</a><span>›</span>${escape(tool.name)}</nav><section class="page-intro"><h1>${escape(tool.name)}</h1><p>${escape(tool.description)}</p></section><section class="tool-panel" aria-label="${escape(tool.name)} tool">${toolUI(tool)}</section>${tool.category === "converters" ? converterInfo(tool) : `<section class="info"><h2>How to use it</h2><p>${escape(tool.example)} Everything runs in your browser.</p></section>`}${tool.engine === "pair-converter" ? `<p class="converter-links"><a href="/tools/${inverse.slug}/">Reverse: ${escape(inverse.name)}</a><span>·</span><a href="/tools/${tool.quantity}-converter/">All ${escape(quantities[tool.quantity].name.toLowerCase())} units</a></p>` : ""}<section class="listing"><h2>Related tools</h2><div class="tool-grid">${related.map(link).join("")}</div></section></main>`,
   }));
 }
 
+for (const item of trustPages) await save(`${item.slug}/index.html`, page({
+  title: `${item.title} | Jiffy`, description: item.description, url: `/${item.slug}/`,
+  body: `<main class="container trust-page"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span>${item.title}</nav><article>${item.body}</article></main>`,
+}));
+
 await save("converter-data.js", await readFile(new URL("../src/converters.mjs", import.meta.url), "utf8"));
 
-const urls = ["/", ...categories.map(c => `/${c.slug}/`), ...tools.map(t => `/tools/${t.slug}/`)];
+const urls = ["/", ...categories.map(c => `/${c.slug}/`), ...tools.map(t => `/tools/${t.slug}/`), ...trustPages.map(p => `/${p.slug}/`)];
 await save("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(url => `  <url><loc>${origin}${url}</loc></url>`).join("\n")}\n</urlset>\n`);
 await save("_redirects", "/music/tap-bpm/ /tools/tap-bpm/ 301\n/music/tap-bpm /tools/tap-bpm/ 301\n/music/tap-bpm/index.html /tools/tap-bpm/ 301\n");
 console.log(`Built ${tools.length} tools, ${categories.length} categories, and sitemap with ${urls.length} URLs.`);

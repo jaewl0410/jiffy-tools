@@ -10,9 +10,11 @@ Node.js is the only build requirement. No packages need to be installed.
 node scripts/build.mjs
 node scripts/check.mjs
 node scripts/smoke.mjs
+node scripts/image-smoke.mjs
 ```
 
 The build generates the home page, category pages, tool pages, sitemap, and `_redirects` in `public/`. Commit the generated HTML with source changes so Cloudflare can deploy `public/` directly even without a build command.
+The image smoke test uses a locally installed Chrome browser; set `CHROME_PATH` if it is not in the default Windows location. It runs sample images through the browser tools without adding a production dependency.
 
 ## Add a tool
 
@@ -28,6 +30,12 @@ Every tool is published at `/tools/<slug>/`; categories are browse pages at `/<c
 `src/converters.mjs` defines the 13 quantity groups, ordered unit lists, conversion factors, temperature offsets, validation, and the selected pair URLs. `src/registry.mjs` derives one general converter per quantity and the pair pages, including title, description, examples, precision, and related links. The build copies the shared conversion module to `public/converter-data.js`; `public/converter.js` provides the browser UI. Do not edit the generated copy directly. Add a unit or pair in the source module, then rebuild and run the checks.
 
 Data storage uses decimal SI units by default (`1 KB = 1,000 B`), with separately labeled binary IEC units (`1 KiB = 1,024 B`). All conversion happens in the browser; no API or server calculations are used.
+
+## Image tools and site information
+
+Image tools share `public/image.js` for file checks, decoding, Canvas processing, previews, and downloads. Their format and mode settings live in `src/registry.mjs`; the build uses these settings to generate 12 tool pages under `/tools/` and the `/image/` category. PNG, JPG, and WebP files are limited to 20 MB and 40 megapixels. JPG output fills transparent pixels with white. Resize, rotate, flip, and crop export PNG. The Base64 pair accepts either a data URL with a MIME type or raw Base64 image bytes.
+
+About, Privacy, Contact, and Terms pages are generated from `scripts/build.mjs` and linked in every footer. Update the page copy there, then rebuild. The Contact page currently uses public GitHub issues until a support address is available.
 
 ## Deployment
 
