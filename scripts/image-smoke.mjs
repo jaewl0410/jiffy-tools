@@ -5,8 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const base = (process.env.JIFFY_TEST_URL || "http://127.0.0.1:8765").replace(/\/$/, "");
 const profile = await mkdtemp(join(tmpdir(), "jiffy-image-smoke-"));
-const server = spawn(process.execPath, ["scripts/serve.mjs"], { cwd: new URL("../", import.meta.url), windowsHide: true });
+const server = base === "http://127.0.0.1:8765" ? spawn(process.execPath, ["scripts/serve.mjs"], { cwd: new URL("../", import.meta.url), windowsHide: true }) : null;
 const chrome = spawn(chromePath, ["--headless=new", "--disable-gpu", "--no-first-run", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"], { windowsHide: true, stdio: "ignore" });
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(fn, label) {
@@ -15,7 +16,7 @@ async function until(fn, label) {
 }
 let ws;
 try {
-  await until(async () => (await fetch("http://127.0.0.1:8765/")).ok, "local site");
+  await until(async () => (await fetch(`${base}/`)).ok, "site");
   const port = await until(async () => (await readFile(join(profile, "DevToolsActivePort"), "utf8")).split("\n")[0], "Chrome debugging port");
   const target = await (await fetch(`http://127.0.0.1:${port}/json/new?about:blank`, { method: "PUT" })).json();
   ws = new WebSocket(target.webSocketDebuggerUrl);
@@ -38,7 +39,7 @@ try {
     return result.result.value;
   }
   async function go(slug) {
-    await send("Page.navigate", { url: `http://127.0.0.1:8765/tools/${slug}/` });
+    await send("Page.navigate", { url: `${base}/tools/${slug}/` });
     await until(async () => await evalJs(`document.readyState === "complete" && !!document.querySelector(".image-ui") && document.getElementById("image-run").onclick === null`), slug);
     // A complete document includes its deferred module script.
     await pause(50);
@@ -164,8 +165,8 @@ try {
     const width = await evalJs(`Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)`);
     assert.ok(width <= 320, `${slug}: horizontal overflow at 320px (${width}px)`);
   }
-  console.log("Smoked all 12 image tools in Chrome: formats, JPG white background, resize, rotate, flip, crop, Base64 round trips, and 320px layout.");
+  console.log(`Smoked all 12 image tools in Chrome at ${base}: formats, JPG white background, resize, rotate, flip, crop, Base64 round trips, and 320px layout.`);
 } finally {
-  ws?.close(); server.kill(); chrome.kill();
+  ws?.close(); server?.kill(); chrome.kill();
   if (profile.startsWith(tmpdir()) && profile.includes("jiffy-image-smoke-")) await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }

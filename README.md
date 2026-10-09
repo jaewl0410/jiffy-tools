@@ -14,7 +14,7 @@ node scripts/image-smoke.mjs
 ```
 
 The build generates the home page, category pages, tool pages, sitemap, and `_redirects` in `public/`. Commit the generated HTML with source changes so Cloudflare can deploy `public/` directly even without a build command.
-The image smoke test uses a locally installed Chrome browser; set `CHROME_PATH` if it is not in the default Windows location. It runs sample images through the browser tools without adding a production dependency.
+The image smoke test uses a locally installed Chrome browser; set `CHROME_PATH` if it is not in the default Windows location. It runs sample images through the browser tools without adding a production dependency. Set `JIFFY_TEST_URL=https://jiffy.tools` to run the same checks against production.
 
 ## Add a tool
 
