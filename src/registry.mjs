@@ -1,15 +1,17 @@
+import { quantities, pairSpecs, getUnit, convert, formatNumber } from "./converters.mjs";
+
 export const categories = [
   { slug: "text", name: "Text", description: "Count, clean, and transform text in your browser." },
   { slug: "developer", name: "Developer", description: "Everyday encoding, JSON, IDs, and time tools." },
   { slug: "calculators", name: "Calculators", description: "Quick answers for percentages, dates, and music timing." },
-  { slug: "converters", name: "Converters", description: "Simple unit and format converters are coming in the next wave." },
+  { slug: "converters", name: "Converters", description: "Convert common units instantly, with clear formulas and no uploads." },
 ];
 
 const text = (slug, name, description, engine, example, related) => ({ slug, name, description, category: "text", engine, example, related });
 const dev = (slug, name, description, engine, example, related) => ({ slug, name, description, category: "developer", engine, example, related });
 const calc = (slug, name, description, engine, example, related, fields) => ({ slug, name, description, category: "calculators", engine, example, related, fields });
 
-export const tools = [
+const waveOneTools = [
   text("word-counter", "Word Counter", "Count words, characters, sentences, and reading time as you type.", "analyzer", "Paste an article or essay to check its length.", ["character-counter", "case-converter"]),
   text("character-counter", "Character Counter", "Count characters with and without spaces in real time.", "analyzer", "Check the length of a social post or form response.", ["word-counter", "remove-extra-spaces"]),
   text("case-converter", "Case Converter", "Convert text to uppercase, lowercase, title case, or sentence case.", "transform", "Turn a heading into title case with one click.", ["remove-extra-spaces", "sort-lines"]),
@@ -36,3 +38,48 @@ export const tools = [
   title: `${tool.name} — Free Online Tool | Jiffy`,
   meta: tool.description,
 }));
+
+const pairName = slug => slug.split("-to-").map(part => ({
+  cm: "CM", mm: "MM", km: "KM", kg: "KG", lbs: "LBS", mb: "MB", gb: "GB", kb: "KB", tb: "TB", kmh: "KM/H", mph: "MPH",
+  "meters-per-second": "Meters per Second",
+})[part] || part.charAt(0).toUpperCase() + part.slice(1)).join(" to ");
+
+const relatedQuantities = {
+  area: ["length", "volume"], volume: ["area", "length"], energy: ["power", "time"],
+  power: ["energy", "frequency"], pressure: ["weight", "area"],
+  angle: ["length", "frequency"], frequency: ["time", "speed"],
+};
+
+const generalConverters = Object.entries(quantities).map(([quantity, definition]) => {
+  const [from, to] = definition.units;
+  const exampleValues = quantity === "temperature" ? [0, 100] : quantity === "data-storage" ? [1, 1000] : [1, 10];
+  const relatedPairs = pairSpecs.filter(spec => spec[0] === quantity).slice(0, 5).map(spec => spec[1]);
+  return {
+    slug: `${quantity}-converter`, name: `${definition.name} Converter`, category: "converters", engine: "unit-converter", quantity,
+    units: definition.units.map(unit => unit.id), from: from.id, to: to.id, precision: 10,
+    description: `Convert ${definition.name.toLowerCase()} units instantly. Choose two units, enter a value, and see the result as you type.`,
+    examples: exampleValues.map(value => `${formatNumber(value)} ${from.symbol} = ${formatNumber(convert(quantity, from.id, to.id, value))} ${to.symbol}`),
+    related: relatedPairs.length ? relatedPairs : relatedQuantities[quantity].map(other => `${other}-converter`),
+    title: `${definition.name} Converter — Free Unit Conversion | Jiffy`,
+    meta: `Convert ${definition.name.toLowerCase()} units online with instant results and clear unit definitions. Free browser-based ${definition.name.toLowerCase()} converter.`,
+  };
+});
+
+const pairConverters = pairSpecs.map(([quantity, slug, from, to]) => {
+  const source = getUnit(quantity, from), target = getUnit(quantity, to);
+  const name = `${pairName(slug)} Converter`;
+  const inverse = pairSpecs.find(spec => spec[0] === quantity && spec[2] === to && spec[3] === from);
+  const examples = (quantity === "temperature" ? [0, 100] : [1, 10])
+    .map(value => `${formatNumber(value)} ${source.symbol} = ${formatNumber(convert(quantity, from, to, value))} ${target.symbol}`);
+  return {
+    slug, name, category: "converters", engine: "pair-converter", quantity,
+    units: [from, to], from, to, precision: 10,
+    description: `Convert ${source.label.toLowerCase()} to ${target.label.toLowerCase()} instantly. Enter any value to see the result.`,
+    examples,
+    related: [inverse?.[1], `${quantity}-converter`, ...pairSpecs.filter(spec => spec[0] === quantity && spec[1] !== slug && spec[1] !== inverse?.[1]).slice(0, 3).map(spec => spec[1])].filter(Boolean),
+    title: `${name} — Formula & Examples | Jiffy`,
+    meta: `${name}: enter a value for an instant result. See the conversion formula and practical examples.`,
+  };
+});
+
+export const tools = [...waveOneTools, ...generalConverters, ...pairConverters];

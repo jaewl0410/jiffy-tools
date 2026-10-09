@@ -63,6 +63,18 @@ button:focus-visible,a:focus-visible { outline:3px solid #555; outline-offset:3p
 .info { margin-top:32px; }
 .info h2,.listing h2 { margin-bottom:10px; }
 .info p { line-height:1.65; }
+.quantity-nav { display:flex; flex-wrap:wrap; gap:8px; margin:28px 0 8px; }
+.quantity-nav a { padding:6px 10px; border:1px solid var(--line); border-radius:100px; background:#fff; color:#444; font-size:.86rem; text-decoration:none; }
+.quantity-nav a:hover { border-color:#888; }
+.quantity-section { scroll-margin-top:20px; }
+.converter-ui .fields { align-items:end; }
+.converter-ui .field { flex-basis:150px; }
+.converter-ui #converter-swap { flex:0 0 auto; }
+.converter-result { overflow-wrap:anywhere; user-select:text; }
+.converter-pair-units { display:flex; flex:2 1 240px; align-items:center; flex-wrap:wrap; gap:8px; padding:11px 0; font-size:.95rem; }
+.converter-pair-units span:first-child,.converter-pair-units span:last-child { font-weight:600; }
+.example-list { color:var(--muted); padding-left:22px; line-height:1.8; }
+.converter-links { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0 0; font-size:.92rem; }
 .site-footer { border-top:1px solid var(--line); background:#fff; }
 .site-footer > div { width:min(1060px,92%); margin:auto; display:flex; justify-content:space-between; gap:20px; padding:22px 0; color:#777; font-size:.84rem; }
 .site-footer a { text-decoration:none; font-weight:700; color:#333; }

@@ -1,5 +1,6 @@
 import { readFile, stat, readdir } from "node:fs/promises";
 import { categories, tools } from "../src/registry.mjs";
+import { quantities } from "../src/converters.mjs";
 
 const publicDir = new URL("../public/", import.meta.url);
 const failures = [];
@@ -25,11 +26,18 @@ if (new Set(tools.map(t => t.slug)).size !== tools.length) failures.push("Duplic
 for (const tool of tools) {
   if (!categories.some(c => c.slug === tool.category)) failures.push(`Unknown category: ${tool.slug}`);
   for (const related of tool.related) if (!tools.some(t => t.slug === related)) failures.push(`Unknown related tool: ${tool.slug} → ${related}`);
+  if (tool.category === "converters") {
+    if (!quantities[tool.quantity]) failures.push(`Unknown converter quantity: ${tool.slug}`);
+    if (!tool.units.includes(tool.from) || !tool.units.includes(tool.to)) failures.push(`Bad converter defaults: ${tool.slug}`);
+    if (tool.engine === "pair-converter" && !tools.some(t => t.engine === "pair-converter" && t.quantity === tool.quantity && t.from === tool.to && t.to === tool.from)) failures.push(`Missing inverse pair: ${tool.slug}`);
+  }
 }
 
 for (const url of urls) {
   const html = await read("." + url + "index.html");
   if (!html.includes(`<link rel="canonical" href="https://jiffy.tools${url}">`)) failures.push(`Bad canonical: ${url}`);
+  if ((html.match(/<link rel="canonical"/g) || []).length !== 1) failures.push(`Duplicate canonical: ${url}`);
+  if (/hreflang=/i.test(html)) failures.push(`Unexpected hreflang: ${url}`);
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
   const description = html.match(/<meta name="description" content="([^"]+)">/)?.[1];
   if (!title) failures.push(`Missing title: ${url}`);
@@ -59,6 +67,13 @@ for (const url of urls) {
   for (const match of html.matchAll(/src="(\/[^"]*)"/g)) {
     if (!await exists(match[1])) failures.push(`Missing asset ${url} → ${match[1]}`);
   }
+  if (url.startsWith("/tools/")) {
+    const tool = tools.find(t => url === `/tools/${t.slug}/`);
+    if (tool.category === "converters") {
+      if (!html.includes(`data-quantity="${tool.quantity}"`) || !html.includes('id="converter-value"')) failures.push(`Missing converter UI: ${url}`);
+      if (tool.engine === "pair-converter" && (!html.includes("Conversion formula") || !html.includes("Reverse:"))) failures.push(`Missing pair content: ${url}`);
+    }
+  }
 }
 if (!await exists(new URL(ogImage).pathname)) failures.push(`Missing OG asset: ${ogImage}`);
 for (const [asset, width, height] of [[favicon, 512, 512], [new URL(ogImage).pathname, 1200, 629]]) {
@@ -68,6 +83,7 @@ for (const [asset, width, height] of [[favicon, 512, 512], [new URL(ogImage).pat
 const sitemap = await read("./sitemap.xml");
 const listed = [...sitemap.matchAll(/<loc>https:\/\/jiffy\.tools([^<]+)<\/loc>/g)].map(m => m[1]);
 if (listed.length !== urls.length || listed.some(url => !urlSet.has(url))) failures.push("Sitemap does not match generated pages.");
+if (new Set(listed).size !== listed.length) failures.push("Duplicate sitemap URL.");
 const publicHtml = await htmlPaths();
 const expectedHtml = urls.map(url => (url === "/" ? "" : url.slice(1)) + "index.html");
 if (publicHtml.length !== expectedHtml.length || publicHtml.some(path => !expectedHtml.includes(path))) failures.push("Public HTML files do not match sitemap URLs.");
