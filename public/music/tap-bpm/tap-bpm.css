@@ -1,0 +1,161 @@
+.tap-page {
+  margin-top: 48px;
+  margin-bottom: 64px;
+}
+
+.back-link {
+  color: #555;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.page-heading h1 {
+  margin-top: 28px;
+}
+
+.page-heading p {
+  margin-bottom: 28px;
+}
+
+.tap-tool {
+  padding: 36px 24px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.bpm-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+#bpm {
+  min-width: 2ch;
+  font-size: clamp(4rem, 14vw, 6rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bpm-unit {
+  color: #666;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.tap-status {
+  min-height: 1.5em;
+  margin: 16px 0 26px;
+}
+
+.tap-button {
+  display: block;
+  width: min(100%, 320px);
+  min-height: 180px;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 12px;
+  background: #222;
+  color: #fff;
+  font: inherit;
+  font-size: 2rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.tap-button:hover {
+  background: #333;
+}
+
+.tap-button:active {
+  background: #444;
+  transform: scale(0.99);
+}
+
+.tap-button:focus-visible,
+.reset-button:focus-visible,
+.back-link:focus-visible {
+  outline: 3px solid #555;
+  outline-offset: 4px;
+}
+
+.reset-button {
+  margin-top: 24px;
+  padding: 10px 20px;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background: #f7f7f7;
+}
+
+.keyboard-hint {
+  margin: 18px 0 0;
+  font-size: 0.9rem;
+}
+
+.info-section {
+  margin-top: 36px;
+}
+
+.info-section h2 {
+  font-size: 1.3rem;
+}
+
+.info-section p {
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+.related-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.related-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.related-card span {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .tap-page {
+    width: min(700px, 92%);
+    margin-top: 28px;
+  }
+
+  .tap-tool {
+    padding: 30px 16px;
+  }
+
+  .tap-button {
+    min-height: 160px;
+  }
+
+  .related-tools {
+    grid-template-columns: 1fr;
+  }
+}
