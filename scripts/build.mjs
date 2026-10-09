@@ -4,25 +4,42 @@ import { categories, tools } from "../src/registry.mjs";
 
 const root = new URL("../public/", import.meta.url);
 const origin = "https://jiffy.tools";
+const favicon = "/assets/favicon.png";
+const ogImage = `${origin}/assets/og-image.png`;
+const defaultLocale = "en";
+const localeMetadata = {
+  en: { siteName: "Jiffy", ogLocale: "en_US" },
+};
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
 const path = (...parts) => join(root.pathname.replace(/^\/(?:[A-Za-z]:)/, match => match.slice(1)), ...parts);
 const link = tool => `<a class="tool-card" href="/tools/${tool.slug}/"><strong>${escape(tool.name)}</strong><span>${escape(tool.description)}</span></a>`;
 const nav = `<nav class="site-nav" aria-label="Categories">${categories.map(c => `<a href="/${c.slug}/">${escape(c.name)}</a>`).join("")}</nav>`;
 
-function page({ title, description, url, body, script = "" }) {
+function page({ title, description, url, body, script = "", locale = defaultLocale }) {
+  const site = localeMetadata[locale];
+  if (!site) throw new Error(`Unsupported locale: ${locale}`);
+  const canonicalUrl = `${origin}${url}`;
   return `<!doctype html>
-<html lang="en">
+<html lang="${escape(locale)}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escape(title)}</title>
   <meta name="description" content="${escape(description)}">
-  <link rel="canonical" href="${origin}${url}">
+  <link rel="canonical" href="${canonicalUrl}">
+  <link rel="icon" type="image/png" sizes="512x512" href="${favicon}">
+  <link rel="apple-touch-icon" href="${favicon}">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="${escape(site.siteName)}">
+  <meta property="og:locale" content="${escape(site.ogLocale)}">
   <meta property="og:title" content="${escape(title)}">
   <meta property="og:description" content="${escape(description)}">
-  <meta property="og:url" content="${origin}${url}">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:url" content="${canonicalUrl}">
+  <meta property="og:image" content="${ogImage}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escape(title)}">
+  <meta name="twitter:description" content="${escape(description)}">
+  <meta name="twitter:image" content="${ogImage}">
   <link rel="stylesheet" href="/styles.css">
 ${script ? `  ${script}\n` : ""}
 </head>
