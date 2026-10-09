@@ -1,0 +1,39 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f7f7f7;
+  color: #222;
+}
+
+main {
+  width: min(700px, 90%);
+  margin: 100px auto;
+}
+
+h1 {
+  font-size: 3rem;
+  margin-bottom: 0;
+}
+
+p {
+  color: #666;
+  margin-bottom: 40px;
+}
+
+.tools {
+  display: grid;
+  gap: 12px;
+}
+
+.tools a {
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #ddd;
+}
