@@ -20,7 +20,7 @@ The image smoke test uses a locally installed Chrome browser; set `CHROME_PATH` 
 
 The shared `public/analytics.js` helper supports GA4 page views and four tool events: `tool_open`, `tool_used`, `result_copied`, and `file_downloaded`. Tool events send only the slug, category, and path. The URL used for page views excludes query strings, and analytics and advertising cookie storage are denied. Tool inputs, results, and file names are never event parameters.
 
-Analytics is disabled by default. To activate it, create a GA4 web data stream for `https://jiffy.tools` and set its `G-...` measurement ID as the `GA_MEASUREMENT_ID` build variable in Cloudflare Workers Builds. Run the build and deploy again. When unset, the helper makes no external request and the generated Privacy page states that usage analytics are inactive. Do not edit generated HTML to add the ID; the build generates the tag and Privacy copy together.
+Production analytics uses the `jiffy.tools` GA4 web data stream. Its measurement ID is configured as the `GA_MEASUREMENT_ID` production build variable in Cloudflare Workers Builds. Set the same variable for local builds when regenerating committed HTML, so the tag and Privacy copy stay aligned. When unset, the helper makes no external request and the generated Privacy page states that usage analytics are inactive. Do not edit generated HTML to add the ID; the build generates the tag and Privacy copy together.
 
 ## Add a tool
 
