@@ -83,6 +83,15 @@ const pairConverters = pairSpecs.map(([quantity, slug, from, to]) => {
   };
 });
 
+const featuredSlugs = ["minutes-to-hours", "date-difference-calculator", "kb-to-mb", "inches-to-cm", "word-counter", "json-formatter", "percentage-change-calculator", "png-to-jpg"];
+const seoOverrides = {
+  "date-difference-calculator": { title: "Date Difference Calculator — Days Between Dates | Jiffy", meta: "Enter two dates to find the calendar days between them. See the result instantly in your browser." },
+  "minutes-to-hours": { title: "Minutes to Hours Converter — Decimal Hours | Jiffy", meta: "Convert minutes to decimal hours instantly. 20 minutes = 0.3333 hours. See the ÷60 formula and common values." },
+  "kb-to-mb": { title: "KB to MB Converter — Decimal Units | Jiffy", meta: "Convert KB to MB instantly using decimal units, with a clear note on KB versus KiB." },
+  "percentage-change-calculator": { title: "Percentage Change Calculator — Increase or Decrease | Jiffy", meta: "Enter an original and new value to calculate percentage increase or decrease, with a worked example." },
+  "png-to-jpg": { title: "PNG to JPG Converter — Private, No Upload | Jiffy", meta: "Convert PNG to JPG in your browser. Transparent areas become white; choose quality and download.", name: "PNG to JPG Converter" },
+};
+
 const image = (slug, name, description, mode, related, options = {}) => ({
   slug, name, description, category: "image", engine: "image", mode, related, ...options,
   example: "Choose an image, adjust the options, then download the result.",
@@ -103,4 +112,5 @@ const imageTools = [
   image("image-cropper", "Image Cropper", "Crop an image by entering its start position and output size in pixels.", "crop", ["image-resizer", "rotate-image"]),
 ];
 
-export const tools = [...waveOneTools, ...generalConverters, ...pairConverters, ...imageTools];
+export const tools = [...waveOneTools, ...generalConverters, ...pairConverters, ...imageTools]
+  .map(tool => ({ ...tool, ...seoOverrides[tool.slug], featuredRank: featuredSlugs.indexOf(tool.slug) }));

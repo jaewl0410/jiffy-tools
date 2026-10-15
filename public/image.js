@@ -162,6 +162,7 @@ if (root) {
         }
       }
       status("Ready to download.");
+      window.JiffyAnalytics?.track("tool_used");
     } catch (error) { status(error.message || "Could not process this image.", true); }
     finally { $("image-run").disabled = false; }
   }
@@ -189,5 +190,9 @@ if (root) {
   });
   if ($("quality")) $("quality").addEventListener("input", () => $("quality-value").textContent = `${$("quality").value}%`);
   $("image-run").addEventListener("click", run);
+  $("image-download").addEventListener("click", event => {
+    if (!event.defaultPrevented && !$("image-download").hidden && $("image-download").href) window.JiffyAnalytics?.track("file_downloaded");
+  });
+  window.JiffyAnalytics?.track("tool_open");
   window.addEventListener("pagehide", () => { if (resultUrl) URL.revokeObjectURL(resultUrl); if (textUrl) URL.revokeObjectURL(textUrl); });
 }

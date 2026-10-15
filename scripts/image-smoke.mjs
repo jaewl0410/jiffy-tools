@@ -165,7 +165,16 @@ try {
     const width = await evalJs(`Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)`);
     assert.ok(width <= 320, `${slug}: horizontal overflow at 320px (${width}px)`);
   }
-  console.log(`Smoked all 12 image tools in Chrome at ${base}: formats, JPG white background, resize, rotate, flip, crop, Base64 round trips, and 320px layout.`);
+  for (const viewport of [320, 430]) {
+    await send("Emulation.setDeviceMetricsOverride", { width: viewport, height: 700, deviceScaleFactor: 1, mobile: true });
+    for (const slug of ["minutes-to-hours", "kb-to-mb", "mb-to-gb", "gb-to-mb", "inches-to-cm", "km-to-miles", "celsius-to-fahrenheit", "fahrenheit-to-celsius"]) {
+      await send("Page.navigate", { url: `${base}/tools/${slug}/` });
+      await until(async () => await evalJs(`document.readyState === "complete" && !!document.querySelector(".conversion-table")`), slug);
+      const width = await evalJs(`Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)`);
+      assert.ok(width <= viewport, `${slug}: horizontal overflow at ${viewport}px (${width}px)`);
+    }
+  }
+  console.log(`Smoked all 12 image tools and eight conversion tables in Chrome at ${base}, including 320px and 430px layout.`);
 } finally {
   ws?.close(); server?.kill(); chrome.kill();
   if (profile.startsWith(tmpdir()) && profile.includes("jiffy-image-smoke-")) await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });

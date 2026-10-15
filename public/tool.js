@@ -22,6 +22,7 @@
   const fmt = n => Number.isFinite(n) ? Number(n.toFixed(6)).toLocaleString("en-US", { maximumFractionDigits: 6 }) : "—";
   const result = text => { const el = $("result"); if (el) el.textContent = text; };
   const selected = () => window.getSelection()?.toString() || "";
+  window.JiffyAnalytics?.track("tool_open");
 
   if (slug === "word-counter" || slug === "character-counter") {
     const update = () => {
@@ -37,20 +38,21 @@
       ];
       $("metrics").innerHTML = metrics.map(([label, n]) => `<div><strong>${n}</strong><span>${label}</span></div>`).join("");
     };
-    $("input").addEventListener("input", update);
+    $("input").addEventListener("input", () => { update(); if (value("input").trim()) window.JiffyAnalytics?.usedDebounced(); else window.JiffyAnalytics?.cancelUsed(); });
     update();
     return;
   }
   if (slug === "tap-bpm") {
     let lastTap = null;
     let intervals = [];
-    const reset = () => { lastTap = null; intervals = []; $("bpm").textContent = "—"; $("tap-status").textContent = "Tap the button or press Space to begin."; };
+    let tracked = false;
+    const reset = () => { lastTap = null; intervals = []; tracked = false; $("bpm").textContent = "—"; $("tap-status").textContent = "Tap the button or press Space to begin."; };
     const tap = () => {
       const now = performance.now();
       if (lastTap !== null) {
         const interval = now - lastTap;
         if (interval < 120) return;
-        if (interval >= 5000) { intervals = []; $("bpm").textContent = "—"; }
+        if (interval >= 5000) { intervals = []; tracked = false; $("bpm").textContent = "—"; }
         else { intervals.push(interval); if (intervals.length > 8) intervals.shift(); }
       }
       lastTap = now;
@@ -58,6 +60,7 @@
       const bpm = Math.round(60000 * intervals.length / intervals.reduce((a, b) => a + b, 0));
       $("bpm").textContent = String(bpm);
       $("tap-status").textContent = `${bpm} BPM · ${intervals.length} recent interval${intervals.length === 1 ? "" : "s"}`;
+      if (intervals.length >= 3 && !tracked) { window.JiffyAnalytics?.track("tool_used"); tracked = true; }
     };
     $("tap-button").addEventListener("click", tap);
     $("reset-button").addEventListener("click", reset);
@@ -78,6 +81,7 @@
         if (!text) throw Error("There is nothing to copy yet.");
         await navigator.clipboard.writeText(text);
         status("Copied to clipboard.");
+        window.JiffyAnalytics?.track("result_copied");
         return;
       }
       status("");
@@ -171,6 +175,7 @@
           else result(`${$("note").selectedOptions[0].text} · ${$("feel").selectedOptions[0].text}: ${fmt(beat * Number(value("note")) * Number(value("feel")))} ms`);
         }
       }
+      if (value("output") || $("result")?.textContent) window.JiffyAnalytics?.track("tool_used");
     } catch (error) {
       status(error instanceof SyntaxError && (slug === "json-formatter" || slug === "json-validator") ? `Invalid JSON: ${error.message}` : error.message, true);
       if ($("result")) result(error.message);

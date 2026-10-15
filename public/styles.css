@@ -93,6 +93,11 @@ button:focus-visible,a:focus-visible { outline:3px solid #555; outline-offset:3p
 .converter-pair-units { display:flex; flex:2 1 240px; align-items:center; flex-wrap:wrap; gap:8px; padding:11px 0; font-size:.95rem; }
 .converter-pair-units span:first-child,.converter-pair-units span:last-child { font-weight:600; }
 .example-list { color:var(--muted); padding-left:22px; line-height:1.8; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+.conversion-table { width:100%; max-width:520px; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+.conversion-table th,.conversion-table td { padding:9px 12px; border-bottom:1px solid var(--line); text-align:left; }
+.conversion-table th { background:#f4f7fb; font-size:.9rem; }
+@media(max-width:430px) { .conversion-table th,.conversion-table td { padding:8px 6px; font-size:.88rem; } }
 .converter-links { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:20px 0 0; font-size:.92rem; }
 .converter-links a { display:inline-flex; align-items:center; min-height:44px; }
 .site-footer { border-top:1px solid var(--line); background:#fff; }

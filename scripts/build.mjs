@@ -8,6 +8,8 @@ const origin = "https://jiffy.tools";
 const favicon = "/assets/favicon.png";
 const ogImage = `${origin}/assets/og-image.png`;
 const defaultLocale = "en";
+const analyticsId = process.env.GA_MEASUREMENT_ID?.trim() || "";
+if (analyticsId && !/^G-[A-Z0-9]+$/.test(analyticsId)) throw new Error("GA_MEASUREMENT_ID must be a GA4 web measurement ID (G-...).");
 const localeMetadata = {
   en: { siteName: "Jiffy", ogLocale: "en_US" },
 };
@@ -17,7 +19,7 @@ const link = tool => `<a class="tool-card" href="/tools/${tool.slug}/"><strong>$
 const nav = `<nav class="site-nav" aria-label="Categories">${categories.map(c => `<a href="/${c.slug}/">${escape(c.name)}</a>`).join("")}</nav>`;
 const trustPages = [
   { slug: "about", title: "About Jiffy", description: "Learn about Jiffy's free browser tools and how they work.", body: `<h1>About Jiffy</h1><p>Jiffy is a collection of free tools for everyday conversions, calculations, text, and images. There is no account to create.</p><p>We aim to process tool inputs locally in your browser whenever possible. Image tools on this site do not upload your files. If a future tool needs a server upload, we will explain that on its page before you use it.</p>` },
-  { slug: "privacy", title: "Privacy Policy", description: "How Jiffy handles tool inputs, hosting data, cookies, and future advertising.", body: `<h1>Privacy Policy</h1><p>Jiffy does not require an account. The current tools run in your browser; image files and other tool inputs are not sent to Jiffy for processing. A future tool that needs an upload will say so on its page.</p><h2>Hosting and analytics</h2><p>Cloudflare hosts this site and may process basic request information, such as IP address, browser details, and pages requested, to serve and protect it. We currently do not include a separate analytics script or set advertising cookies in the site code.</p><h2>Advertising and cookies</h2><p>We may add ads later. If we use Google AdSense or another ad provider, that provider may use cookies or similar technology to show and measure ads. We will update this policy when advertising is enabled. Browser settings can be used to manage cookies.</p><h2>Contact</h2><p>For questions about this policy, see our <a href="/contact/">contact page</a>.</p>` },
+  { slug: "privacy", title: "Privacy Policy", description: "How Jiffy handles tool inputs, hosting data, analytics, and cookies.", body: `<h1>Privacy Policy</h1><p>Jiffy does not require an account. The current tools run in your browser; image files and other tool inputs are not sent to Jiffy for processing. A future tool that needs an upload will say so on its page.</p><h2>Hosting and analytics</h2><p>Cloudflare hosts this site and may process basic request information, such as IP address, browser details, and pages requested, to serve and protect it. ${analyticsId ? "We use Google Analytics 4 to measure page views and whether a tool was opened, used, copied, or downloaded. Events contain only the tool slug, category, and page path, never tool inputs, results, file names, or file contents. The site denies analytics and advertising cookie storage." : "Usage analytics are not active because no measurement ID is configured. The site code does not load a separate analytics service or set analytics or advertising cookies."}</p><h2>Advertising and cookies</h2><p>We may add ads later. If we use Google AdSense or another ad provider, we will update this policy when advertising is enabled.</p><h2>Contact</h2><p>For questions about this policy, see our <a href="/contact/">contact page</a>.</p>` },
   { slug: "contact", title: "Contact Jiffy", description: "Send feedback or report an issue with a Jiffy tool.", body: `<h1>Contact Jiffy</h1><p>Found a bug or have a tool suggestion? Open a <a href="https://github.com/jaewl0410/jiffy-tools/issues/new">GitHub issue</a>. Issues are public, so do not include private information or files.</p><p>We do not have a public support email yet. A private contact address can be added here when one is available.</p>` },
   { slug: "terms", title: "Terms of Use", description: "Simple terms for using Jiffy's free browser tools.", body: `<h1>Terms of Use</h1><p>Jiffy offers free utility tools as they are. We try to keep them accurate and available, but provide no warranty and cannot guarantee that every result is suitable for your purpose. Check important results before relying on them.</p><p>You are responsible for the files and information you use with the tools. Do not use this site to break laws, interfere with the service, or harm others.</p><p>Links to third-party sites are provided for convenience; we do not control their content. Advertising may appear in the future. We may change the tools and these terms as the site develops.</p>` },
 ];
@@ -60,7 +62,8 @@ function page({ title, description, url, body, script = "", schema = [], locale 
   <meta name="twitter:description" content="${escape(description)}">
   <meta name="twitter:image" content="${ogImage}">
   <link rel="stylesheet" href="/styles.css">
-${schemaScript(schema)}${script ? `  ${script}\n` : ""}
+${schemaScript(schema)}  <script src="/analytics.js" defer${analyticsId ? ` data-measurement-id="${analyticsId}"` : ""}></script>
+${script ? `  ${script}\n` : ""}
 </head>
 <body>
   <header class="site-header"><div class="header-inner"><a class="brand" href="/" aria-label="Jiffy home">jiffy<span>.</span></a>${nav}</div></header>
@@ -125,8 +128,7 @@ async function save(relative, content) {
 }
 
 const grouped = category => tools.filter(t => t.category === category);
-const popularSlugs = ["word-counter", "json-formatter", "percentage-calculator", "cm-to-inches", "kg-to-lbs", "celsius-to-fahrenheit", "length-converter", "data-storage-converter"];
-const popular = popularSlugs.map(slug => tools.find(tool => tool.slug === slug));
+const popular = tools.filter(tool => tool.featuredRank >= 0).sort((a, b) => a.featuredRank - b.featuredRank);
 const searchIndex = tools.map(tool => ({
   name: tool.name,
   description: tool.description,
@@ -141,6 +143,16 @@ const converterNote = quantity => quantity === "data-storage"
   : quantity === "temperature" ? "Temperature conversion includes an offset. Values below absolute zero are not valid."
   : quantity === "frequency" ? "RPM means cycles or revolutions per minute; 60 RPM equals 1 Hz."
   : "";
+const practicalValues = {
+  "minutes-to-hours": { heading: "Common minute values in decimal hours", intro: "Use decimal hours for timesheets and calculations. Twenty minutes is one third of an hour.", values: [15, 20, 30, 45, 60, 90, 120] },
+  "kb-to-mb": { heading: "Common file sizes in MB", intro: "These values use 1 MB = 1,000 KB, so 500 KB is half a decimal megabyte.", values: [100, 250, 500, 750, 1000, 2000, 5000] },
+  "mb-to-gb": { heading: "Common storage sizes in GB", intro: "Compare downloads and storage amounts labeled with decimal MB and GB.", values: [100, 250, 500, 750, 1000, 2000, 5000] },
+  "gb-to-mb": { heading: "Common storage sizes in MB", intro: "One decimal gigabyte is 1,000 megabytes; these rows show larger storage sizes.", values: [0.5, 1, 2, 5, 10, 50, 100] },
+  "inches-to-cm": { heading: "Common lengths in centimeters", intro: "Compare familiar inch measurements using the exact factor 1 inch = 2.54 cm.", values: [1, 2, 4, 6, 8, 10, 12] },
+  "km-to-miles": { heading: "Common distances in miles", intro: "Check short trips and race distances; 5 km is about 3.11 miles.", values: [1, 2, 5, 10, 21.0975, 42.195] },
+  "celsius-to-fahrenheit": { heading: "Familiar temperatures in Fahrenheit", intro: "Reference points cover freezing, room temperature, hot weather, and boiling water at standard pressure.", values: [0, 10, 20, 25, 30, 37, 100] },
+  "fahrenheit-to-celsius": { heading: "Familiar temperatures in Celsius", intro: "Compare freezing weather, indoor temperatures, body temperature, and a hot day.", values: [0, 32, 50, 68, 72, 98.6, 100] },
+};
 function converterInfo(tool) {
   const source = getUnit(tool.quantity, tool.from), target = getUnit(tool.quantity, tool.to);
   const pair = tool.engine === "pair-converter";
@@ -148,18 +160,20 @@ function converterInfo(tool) {
     ? ({ "c-f": "°F = (°C × 9/5) + 32", "f-c": "°C = (°F − 32) × 5/9", "c-k": "K = °C + 273.15", "k-c": "°C = K − 273.15" })[`${tool.from}-${tool.to}`] || "Choose two temperature units to convert."
     : `Multiply ${source.symbol} by ${formatNumber(convert(tool.quantity, tool.from, tool.to, 1), 12)} to get ${target.symbol}.`;
   const generalText = `Choose any two ${quantities[tool.quantity].name.toLowerCase()} units. The result updates as you type, and Swap reverses the direction.`;
-  return `<section class="info"><h2>${pair ? "Conversion formula" : "How to use it"}</h2><p>${escape(pair ? formula : generalText)}</p>${converterNote(tool.quantity) ? `<p>${escape(converterNote(tool.quantity))}</p>` : ""}<h2>Examples</h2><ul class="example-list">${tool.examples.map(example => `<li>${escape(example)}</li>`).join("")}</ul></section>`;
+  const table = practicalValues[tool.slug];
+  const dataNote = pair && tool.quantity === "data-storage" ? `<p>These pair results use decimal KB, MB, and GB (1,000 per step). For 1,024-based units, choose KiB, MiB, or GiB in the <a href="/tools/data-storage-converter/">Data Storage Converter</a>.</p>` : "";
+  return `<section class="info"><h2>${pair ? "Conversion formula" : "How to use it"}</h2><p>${escape(pair ? formula : generalText)}</p>${converterNote(tool.quantity) ? `<p>${escape(converterNote(tool.quantity))}</p>` : ""}${dataNote}${table ? `<h2>${escape(table.heading)}</h2><p>${escape(table.intro)}</p><div class="table-scroll"><table class="conversion-table"><thead><tr><th scope="col">${escape(source.label)} (${escape(source.symbol)})</th><th scope="col">${escape(target.label)} (${escape(target.symbol)})</th></tr></thead><tbody>${table.values.map(value => `<tr><td>${escape(formatNumber(value))}</td><td>${escape(formatNumber(convert(tool.quantity, tool.from, tool.to, value), 8))}</td></tr>`).join("")}</tbody></table></div>` : `<h2>Examples</h2><ul class="example-list">${tool.examples.map(example => `<li>${escape(example)}</li>`).join("")}</ul>`}</section>`;
 }
 await save("index.html", page({
   title: "Jiffy — Quick Tools, No Fuss",
   description: "Free, quick converters, text, developer, and calculator tools. Use them directly in your browser.",
   url: "/",
   schema: [
-    { "@type": "WebSite", "@id": `${origin}/#website`, name: "Jiffy", url: `${origin}/`, publisher: { "@id": `${origin}/#publisher` } },
+    { "@type": "WebSite", "@id": `${origin}/#website`, name: "Jiffy", alternateName: ["Jiffy Tools", "jiffy.tools"], url: `${origin}/`, publisher: { "@id": `${origin}/#publisher` } },
     { "@type": "Organization", "@id": `${origin}/#publisher`, name: "Jiffy", url: `${origin}/`, logo: `${origin}${favicon}` },
   ],
   script: '<script src="/search.js" defer></script>',
-  body: `<main class="container"><section class="hero"><p class="eyebrow">FREE BROWSER TOOLS</p><h1>Quick tools. No fuss.</h1><p>Convert, calculate, and clean up text right in your browser.</p><div class="search-wrap"><label for="tool-search">Find a tool</label><input id="tool-search" type="search" placeholder="Try “cm to inches” or “JSON”" autocomplete="off" aria-controls="search-results"><p id="search-status" class="search-status" role="status" aria-live="polite"></p><div id="search-results" class="search-results" hidden></div></div></section><section class="listing home-categories"><h2>Browse by category</h2><div class="category-grid">${categories.map(c => `<a class="category-card" href="/${c.slug}/"><strong>${escape(c.name)}</strong><span>${grouped(c.slug).length} tools</span><small>${escape(c.description)}</small></a>`).join("")}</div></section><section class="listing"><div class="section-heading"><h2>Popular tools</h2><a href="/converters/">All converters →</a></div><div class="tool-grid">${popular.map(link).join("")}</div></section><script id="search-index" type="application/json">${JSON.stringify(searchIndex).replaceAll("<", "\\u003c")}</script></main>`,
+  body: `<main class="container"><section class="hero"><p class="eyebrow">FREE BROWSER TOOLS</p><h1>Quick tools. No fuss.</h1><p>Jiffy Tools helps you convert, calculate, and clean up text right in your browser.</p><div class="search-wrap"><label for="tool-search">Find a tool</label><input id="tool-search" type="search" placeholder="Try “cm to inches” or “JSON”" autocomplete="off" aria-controls="search-results"><p id="search-status" class="search-status" role="status" aria-live="polite"></p><div id="search-results" class="search-results" hidden></div></div></section><section class="listing home-categories"><h2>Browse by category</h2><div class="category-grid">${categories.map(c => `<a class="category-card" href="/${c.slug}/"><strong>${escape(c.name)}</strong><span>${grouped(c.slug).length} tools</span><small>${escape(c.description)}</small></a>`).join("")}</div></section><section class="listing"><div class="section-heading"><h2>Popular tools</h2><a href="/converters/">All converters →</a></div><div class="tool-grid">${popular.map(link).join("")}</div></section><script id="search-index" type="application/json">${JSON.stringify(searchIndex).replaceAll("<", "\\u003c")}</script></main>`,
 }));
 
 for (const category of categories) {
@@ -170,6 +184,16 @@ for (const category of categories) {
     schema: [breadcrumb([["Home", "/"], [category.name, `/${category.slug}/`]])],
     body: `<main class="container"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span>${category.name}</nav><section class="page-intro"><h1>${category.slug === "converters" ? "Converters" : `${category.name} tools`}</h1><p>${escape(category.description)}</p></section>${category.slug === "converters" ? `<nav class="quantity-nav" aria-label="Converter types">${converterGroups.map(group => `<a href="#${group.quantity}">${escape(quantities[group.quantity].name)}</a>`).join("")}</nav>${converterGroups.map(group => `<section class="listing quantity-section" id="${group.quantity}"><div class="section-heading"><h2>${escape(quantities[group.quantity].name)}</h2><span>${group.tools.length} tools</span></div><div class="tool-grid">${group.tools.map(link).join("")}</div></section>`).join("")}` : `<div class="tool-grid">${grouped(category.slug).map(link).join("")}</div>`}</main>`,
   }));
+}
+
+function toolGuidance(tool) {
+  const guidance = {
+    "date-difference-calculator": "This counts calendar day boundaries between the dates, without including the start date. For example, October 1 to October 2 is 1 day; counting both dates inclusively would be 2 days. Reversing the dates shows the same magnitude and an end-before-start note.",
+    "percentage-change-calculator": "For a positive original value, percentage change = (new − old) / old × 100. For example, 80 to 100 is a 25% increase. The calculator uses the absolute original value as the denominator, including when the original is negative; an original value of zero is undefined.",
+    "tap-bpm": "Two taps give a first estimate. Tap at least four times for an average over three intervals; the tool keeps up to eight recent intervals and resets after a pause of 5 seconds.",
+    "png-to-jpg": "JPG does not support transparency. Transparent PNG areas are filled white before export; adjust quality, then download the result.",
+  };
+  return guidance[tool.slug] ? `<p>${escape(guidance[tool.slug])}</p>` : "";
 }
 
 for (const tool of tools) {
@@ -197,7 +221,7 @@ for (const tool of tools) {
       },
     ],
     script: tool.category === "converters" ? '<script type="module" src="/converter.js"></script>' : tool.engine === "image" ? '<script type="module" src="/image.js"></script>' : '<script src="/tool.js" defer></script>',
-    body: `<main class="container tool-page" data-tool="${tool.slug}"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><a href="/${category.slug}/">${category.name}</a><span>›</span>${escape(tool.name)}</nav><section class="page-intro"><h1>${escape(tool.name)}</h1><p>${escape(tool.description)}</p></section><section class="tool-panel" aria-label="${escape(tool.name)} tool">${toolUI(tool)}</section>${tool.category === "converters" ? converterInfo(tool) : `<section class="info"><h2>How to use it</h2><p>${escape(tool.example)} Everything runs in your browser.</p></section>`}${tool.engine === "pair-converter" ? `<p class="converter-links"><a href="/tools/${inverse.slug}/">Reverse: ${escape(inverse.name)}</a><span>·</span><a href="/tools/${tool.quantity}-converter/">All ${escape(quantities[tool.quantity].name.toLowerCase())} units</a></p>` : ""}<section class="listing"><h2>Related tools</h2><div class="tool-grid">${related.map(link).join("")}</div></section></main>`,
+    body: `<main class="container tool-page" data-tool="${tool.slug}" data-category="${tool.category}"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>›</span><a href="/${category.slug}/">${category.name}</a><span>›</span>${escape(tool.name)}</nav><section class="page-intro"><h1>${escape(tool.name)}</h1><p>${escape(tool.description)}</p></section><section class="tool-panel" aria-label="${escape(tool.name)} tool">${toolUI(tool)}</section>${tool.category === "converters" ? converterInfo(tool) : `<section class="info"><h2>How to use it</h2><p>${escape(tool.example)} Everything runs in your browser.</p>${toolGuidance(tool)}</section>`}${tool.engine === "pair-converter" ? `<p class="converter-links"><a href="/tools/${inverse.slug}/">Reverse: ${escape(inverse.name)}</a><span>·</span><a href="/tools/${tool.quantity}-converter/">All ${escape(quantities[tool.quantity].name.toLowerCase())} units</a></p>` : ""}<section class="listing"><h2>Related tools</h2><div class="tool-grid">${related.map(link).join("")}</div></section></main>`,
   }));
 }
 

@@ -16,6 +16,12 @@ node scripts/image-smoke.mjs
 The build generates the home page, category pages, tool pages, sitemap, and `_redirects` in `public/`. Commit the generated HTML with source changes so Cloudflare can deploy `public/` directly even without a build command.
 The image smoke test uses a locally installed Chrome browser; set `CHROME_PATH` if it is not in the default Windows location. It runs sample images through the browser tools without adding a production dependency. Set `JIFFY_TEST_URL=https://jiffy.tools` to run the same checks against production.
 
+## Usage analytics
+
+The shared `public/analytics.js` helper supports GA4 page views and four tool events: `tool_open`, `tool_used`, `result_copied`, and `file_downloaded`. Tool events send only the slug, category, and path. The URL used for page views excludes query strings, and analytics and advertising cookie storage are denied. Tool inputs, results, and file names are never event parameters.
+
+Analytics is disabled by default. To activate it, create a GA4 web data stream for `https://jiffy.tools` and set its `G-...` measurement ID as the `GA_MEASUREMENT_ID` build variable in Cloudflare Workers Builds. Run the build and deploy again. When unset, the helper makes no external request and the generated Privacy page states that usage analytics are inactive. Do not edit generated HTML to add the ID; the build generates the tag and Privacy copy together.
+
 ## Add a tool
 
 1. Add its metadata and UI fields to `src/registry.mjs`. The registry owns slug, category, engine, title, description, example, and related tools.

@@ -1,4 +1,5 @@
 import { readFile, stat, readdir } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 import { categories, tools } from "../src/registry.mjs";
 import { quantities } from "../src/converters.mjs";
 
@@ -10,6 +11,7 @@ const trust = ["about", "privacy", "contact", "terms"];
 const urls = ["/", ...categories.map(c => `/${c.slug}/`), ...tools.map(t => `/tools/${t.slug}/`), ...trust.map(slug => `/${slug}/`)];
 const urlSet = new Set(urls);
 const read = relative => readFile(new URL(relative, publicDir), "utf8");
+const htmlEscape = value => String(value).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
 const exists = async url => {
   const relative = url.endsWith("/") ? url + "index.html" : url;
   try { await stat(new URL("." + relative, publicDir)); return true; } catch { return false; }
@@ -56,6 +58,7 @@ for (const url of urls) {
         }
         const types = nodes.map(node => node["@type"]);
         if (url === "/" && (!types.includes("WebSite") || !types.includes("Organization"))) failures.push("Missing home schema.");
+        if (url === "/" && JSON.stringify(nodes.find(node => node["@type"] === "WebSite")?.alternateName) !== JSON.stringify(["Jiffy Tools", "jiffy.tools"])) failures.push("Missing WebSite alternate names.");
         if (categories.some(category => url === `/${category.slug}/`) && !types.includes("BreadcrumbList")) failures.push(`Missing category breadcrumbs: ${url}`);
         if (url.startsWith("/tools/")) {
           if (!types.includes("BreadcrumbList") || !types.includes("WebApplication")) failures.push(`Missing tool schema: ${url}`);
@@ -72,6 +75,7 @@ for (const url of urls) {
   const description = html.match(/<meta name="description" content="([^"]+)">/)?.[1];
   if (!title) failures.push(`Missing title: ${url}`);
   if (!description) failures.push(`Missing description: ${url}`);
+  if (!html.includes('src="/analytics.js"')) failures.push(`Missing analytics helper: ${url}`);
   const expected = [
     `<html lang="en">`,
     `<link rel="icon" type="image/png" sizes="512x512" href="${favicon}">`,
@@ -100,11 +104,39 @@ for (const url of urls) {
   }
   if (url.startsWith("/tools/")) {
     const tool = tools.find(t => url === `/tools/${t.slug}/`);
+    if (title !== htmlEscape(tool.title) || description !== htmlEscape(tool.meta)) failures.push(`Registry title/meta mismatch: ${url}`);
+    if (!html.includes(`data-tool="${tool.slug}" data-category="${tool.category}"`)) failures.push(`Missing analytics identity: ${url}`);
     if (tool.category === "converters") {
       if (!html.includes(`data-quantity="${tool.quantity}"`) || !html.includes('id="converter-value"')) failures.push(`Missing converter UI: ${url}`);
       if (tool.engine === "pair-converter" && (!html.includes("Conversion formula") || !html.includes("Reverse:"))) failures.push(`Missing pair content: ${url}`);
     }
     if (tool.engine === "image" && (!html.includes('class="image-ui"') || !html.includes('src="/image.js"') || !html.includes("Your file stays in this browser"))) failures.push(`Missing image UI: ${url}`);
+  }
+}
+for (const slug of ["minutes-to-hours", "kb-to-mb", "mb-to-gb", "gb-to-mb", "inches-to-cm", "km-to-miles", "celsius-to-fahrenheit", "fahrenheit-to-celsius"]) {
+  const html = await read(`./tools/${slug}/index.html`);
+  if (!html.includes('class="conversion-table"') || (html.match(/<tbody><tr>/g) || []).length !== 1 || (html.match(/<tr><td>/g) || []).length < 5) failures.push(`Missing practical conversion table: ${slug}`);
+}
+for (const slug of ["kb-to-mb", "mb-to-gb", "gb-to-mb"]) if (!(await read(`./tools/${slug}/index.html`)).includes("choose KiB, MiB, or GiB")) failures.push(`Missing SI/IEC link: ${slug}`);
+const analytics = await read("./analytics.js");
+for (const measurementId of [undefined, "G-TEST123"]) {
+  const appended = [];
+  const window = {};
+  const document = {
+    currentScript: { dataset: { measurementId } },
+    querySelector: () => ({ dataset: { tool: "minutes-to-hours", category: "converters" } }),
+    createElement: () => ({}), head: { append: item => appended.push(item) },
+  };
+  runInNewContext(analytics, { window, document, location: { pathname: "/tools/minutes-to-hours/", origin: "https://jiffy.tools" }, setTimeout: callback => { callback(); return 1; }, clearTimeout: () => {} });
+  window.JiffyAnalytics.track("tool_open", { input: "secret" });
+  window.JiffyAnalytics.track("unapproved_event");
+  window.JiffyAnalytics.usedDebounced();
+  if (!measurementId && (appended.length || window.dataLayer)) failures.push("Unconfigured analytics made a request or initialized GA4.");
+  if (measurementId) {
+    const events = window.dataLayer.filter(item => item[0] === "event");
+    if (appended.length !== 1 || events.map(item => item[1]).join(",") !== "page_view,tool_open,tool_used") failures.push("Unexpected configured analytics events.");
+    const payload = events[1]?.[2];
+    if (Object.keys(payload || {}).sort().join(",") !== "category,page_path,tool_slug" || JSON.stringify(payload).includes("secret")) failures.push("Analytics event contains unexpected properties.");
   }
 }
 if (!await exists(new URL(ogImage).pathname)) failures.push(`Missing OG asset: ${ogImage}`);
@@ -120,6 +152,7 @@ const publicHtml = await htmlPaths();
 const expectedHtml = urls.map(url => (url === "/" ? "" : url.slice(1)) + "index.html");
 if (publicHtml.length !== expectedHtml.length || publicHtml.some(path => !expectedHtml.includes(path))) failures.push("Public HTML files do not match sitemap URLs.");
 const home = await read("./index.html");
+for (const slug of ["minutes-to-hours", "date-difference-calculator", "kb-to-mb", "inches-to-cm"]) if (!home.includes(`href="/tools/${slug}/"`)) failures.push(`Missing popular tool: ${slug}`);
 const searchData = home.match(/<script id="search-index" type="application\/json">([^<]+)<\/script>/)?.[1];
 if (!home.includes('src="/search.js"') || !searchData) failures.push("Missing home search assets.");
 else {
