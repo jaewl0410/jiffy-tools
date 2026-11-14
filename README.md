@@ -22,6 +22,10 @@ The shared `public/analytics.js` helper supports GA4 page views and four tool ev
 
 Production analytics uses the `jiffy.tools` GA4 web data stream. Its measurement ID is configured as the `GA_MEASUREMENT_ID` production build variable in Cloudflare Workers Builds. Set the same variable for local builds when regenerating committed HTML, so the tag and Privacy copy stay aligned. When unset, the helper makes no external request and the generated Privacy page states that usage analytics are inactive. Do not edit generated HTML to add the ID; the build generates the tag and Privacy copy together.
 
+## AdSense review
+
+The shared page template emits the site's AdSense ownership meta tag. `public/ads.txt` contains the authorized Google seller entry for this publisher ID. These files allow site verification without loading the AdSense ad script or displaying ads. Before enabling ads, update the Privacy page with the active advertising and consent practices and configure the required regional consent message. Keep ad placement away from tool inputs and results.
+
 ## Add a tool
 
 1. Add its metadata and UI fields to `src/registry.mjs`. The registry owns slug, category, engine, title, description, example, and related tools.
@@ -41,7 +45,7 @@ Data storage uses decimal SI units by default (`1 KB = 1,000 B`), with separatel
 
 Image tools share `public/image.js` for file checks, decoding, Canvas processing, previews, and downloads. Their format and mode settings live in `src/registry.mjs`; the build uses these settings to generate 12 tool pages under `/tools/` and the `/image/` category. PNG, JPG, and WebP files are limited to 20 MB and 40 megapixels. JPG output fills transparent pixels with white. Resize, rotate, flip, and crop export PNG. The Base64 pair accepts either a data URL with a MIME type or raw Base64 image bytes.
 
-About, Privacy, Contact, and Terms pages are generated from `scripts/build.mjs` and linked in every footer. Update the page copy there, then rebuild. The Contact page currently uses public GitHub issues until a support address is available.
+About, Privacy, Contact, and Terms pages are generated from `scripts/build.mjs` and linked in every footer. Update the page copy there, then rebuild. The Contact page uses public GitHub issues; it warns users not to include sensitive information.
 
 ## Deployment
 
