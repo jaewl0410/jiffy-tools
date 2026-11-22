@@ -9,7 +9,7 @@ const favicon = "/assets/favicon.png";
 const ogImage = `${origin}/assets/og-image.png`;
 const defaultLocale = "en";
 const analyticsId = process.env.GA_MEASUREMENT_ID?.trim() || "";
-const adsenseAccount = "ca-pub-9911934236841379";
+const adsenseAccount = "ca-pub-5840140173801202";
 if (analyticsId && !/^G-[A-Z0-9]+$/.test(analyticsId)) throw new Error("GA_MEASUREMENT_ID must be a GA4 web measurement ID (G-...).");
 const localeMetadata = {
   en: { siteName: "Jiffy", ogLocale: "en_US" },
